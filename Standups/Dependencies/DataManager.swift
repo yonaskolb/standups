@@ -16,6 +16,12 @@ extension DataManager: DependencyKey {
     load: unimplemented("DataManager.load"),
     save: unimplemented("DataManager.save")
   )
+
+  static var previewValue: DataManager = .mock(initialData: try! JSONEncoder().encode([
+      Standup.mock,
+      .designMock,
+      .engineeringMock
+  ]))
 }
 
 extension DependencyValues {

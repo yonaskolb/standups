@@ -65,12 +65,12 @@ extension Standup {
   static let mock = Self(
     id: Standup.ID(UUID()),
     attendees: [
-      Attendee(id: Attendee.ID(UUID()), name: "Blob"),
-      Attendee(id: Attendee.ID(UUID()), name: "Blob Jr"),
-      Attendee(id: Attendee.ID(UUID()), name: "Blob Sr"),
-      Attendee(id: Attendee.ID(UUID()), name: "Blob Esq"),
-      Attendee(id: Attendee.ID(UUID()), name: "Blob III"),
-      Attendee(id: Attendee.ID(UUID()), name: "Blob I"),
+      Attendee(id: .init(), name: "Blob"),
+      Attendee(id: .init(), name: "Blob Jr"),
+      Attendee(id: .init(), name: "Blob Sr"),
+      Attendee(id: .init(), name: "Blob Esq"),
+      Attendee(id: .init(), name: "Blob III"),
+      Attendee(id: .init(), name: "Blob I"),
     ],
     duration: .seconds(60),
     meetings: [
@@ -94,8 +94,8 @@ extension Standup {
   static let engineeringMock = Self(
     id: Standup.ID(UUID()),
     attendees: [
-      Attendee(id: Attendee.ID(UUID()), name: "Blob"),
-      Attendee(id: Attendee.ID(UUID()), name: "Blob Jr"),
+      Attendee(id: .init(), name: "Blob"),
+      Attendee(id: .init(), name: "Blob Jr"),
     ],
     duration: .seconds(60 * 10),
     meetings: [],
@@ -106,8 +106,8 @@ extension Standup {
   static let designMock = Self(
     id: Standup.ID(UUID()),
     attendees: [
-      Attendee(id: Attendee.ID(UUID()), name: "Blob Sr"),
-      Attendee(id: Attendee.ID(UUID()), name: "Blob Jr"),
+      Attendee(id: .init(), name: "Blob Sr"),
+      Attendee(id: .init(), name: "Blob Jr"),
     ],
     duration: .seconds(60 * 30),
     meetings: [],

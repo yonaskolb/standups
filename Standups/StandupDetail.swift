@@ -1,412 +1,404 @@
 import Clocks
 import CustomDump
 import Dependencies
+import SwiftComponent
 import SwiftUI
 import SwiftUINavigation
 import XCTestDynamicOverlay
 
-@MainActor
-class StandupDetailModel: ObservableObject {
-  @Published var destination: Destination? {
-    didSet { self.bind() }
-  }
-  @Published var isDismissed = false
-  @Published var standup: Standup
+struct StandupDetailModel: ComponentModel {
 
-  @Dependency(\.continuousClock) var clock
-  @Dependency(\.date.now) var now
-  @Dependency(\.openSettings) var openSettings
-  @Dependency(\.speechClient.authorizationStatus) var authorizationStatus
-  @Dependency(\.uuid) var uuid
+    @Dependency(\.continuousClock) var clock
+    @Dependency(\.date.now) var now
+    @Dependency(\.openSettings) var openSettings
+    @Dependency(\.speechClient.authorizationStatus) var authorizationStatus
+    @Dependency(\.uuid) var uuid
 
-  var onConfirmDeletion: () -> Void = unimplemented("StandupDetailModel.onConfirmDeletion")
-
-  enum Destination {
-    case alert(AlertState<AlertAction>)
-    case edit(StandupFormModel)
-    case meeting(Meeting)
-    case record(RecordMeetingModel)
-  }
-  enum AlertAction {
-    case confirmDeletion
-    case continueWithoutRecording
-    case openSettings
-  }
-
-  init(
-    destination: Destination? = nil,
-    standup: Standup
-  ) {
-    self.destination = destination
-    self.standup = standup
-    self.bind()
-  }
-
-  func deleteMeetings(atOffsets indices: IndexSet) {
-    self.standup.meetings.remove(atOffsets: indices)
-  }
-
-  func meetingTapped(_ meeting: Meeting) {
-    self.destination = .meeting(meeting)
-  }
-
-  func deleteButtonTapped() {
-    self.destination = .alert(.deleteStandup)
-  }
-
-  func alertButtonTapped(_ action: AlertAction?) async {
-    switch action {
-    case .confirmDeletion?:
-      self.onConfirmDeletion()
-      self.isDismissed = true
-
-    case .continueWithoutRecording?:
-      self.destination = .record(
-        withDependencies(from: self) {
-          RecordMeetingModel(standup: self.standup)
-        }
-      )
-
-    case .openSettings?:
-      await self.openSettings()
-
-    case nil:
-      break
+    struct State {
+        var destination: Destination?
+        var isDismissed = false
+        var standup: Standup
     }
-  }
 
-  func editButtonTapped() {
-    self.destination = .edit(
-      withDependencies(from: self) {
-        StandupFormModel(standup: self.standup)
-      }
-    )
-  }
+    enum Action {
+        case delete
+        case edit
+        case cancel
+        case startMeeting
+        case tapMeeting(Meeting)
+        case deleteMeetings(IndexSet)
+        case alertButton(AlertAction?)
 
-  func cancelEditButtonTapped() {
-    self.destination = nil
-  }
-
-  func doneEditingButtonTapped() {
-    guard case let .edit(model) = self.destination
-    else { return }
-
-    self.standup = model.standup
-    self.destination = nil
-  }
-
-  func startMeetingButtonTapped() {
-    switch self.authorizationStatus() {
-    case .notDetermined, .authorized:
-      self.destination = .record(
-        withDependencies(from: self) {
-          RecordMeetingModel(standup: self.standup)
-        }
-      )
-
-    case .denied:
-      self.destination = .alert(.speechRecognitionDenied)
-
-    case .restricted:
-      self.destination = .alert(.speechRecognitionRestricted)
-
-    @unknown default:
-      break
+        case doneEditing(Standup)
     }
-  }
 
-  private func bind() {
-    switch destination {
-    case let .record(recordMeetingModel):
-      recordMeetingModel.onMeetingFinished = { [weak self] transcript async in
-        guard let self else { return }
-
-        let didCancel = nil == (try? await self.clock.sleep(for: .milliseconds(400)))
-        withAnimation(didCancel ? nil : .default) {
-          self.standup.meetings.insert(
-            Meeting(
-              id: Meeting.ID(self.uuid()),
-              date: self.now,
-              transcript: transcript
-            ),
-            at: 0
-          )
-          self.destination = nil
-        }
-      }
-
-    case .edit, .meeting, .alert, .none:
-      break
+    enum Input {
+        case record(RecordMeetingModel.Output)
     }
-  }
+
+    enum Output {
+        case confirmDeletion(Standup.ID)
+        case standupEdited(Standup)
+    }
+
+    enum Destination {
+        case alert(AlertState<AlertAction>)
+        case edit(StandupFormModel.State)
+        case meeting(Meeting)
+        case record(RecordMeetingModel.State)
+    }
+    enum AlertAction {
+        case confirmDeletion
+        case continueWithoutRecording
+        case openSettings
+    }
+
+    func handle(action: Action, model: Model) async {
+        switch action {
+            case .delete:
+                model.destination = .alert(.deleteStandup)
+            case .edit:
+                model.destination = .edit(.init(standup: model.standup))
+            case .cancel:
+                model.destination = nil
+            case .tapMeeting(let meeting):
+                model.destination = .meeting(meeting)
+            case .deleteMeetings(let indices):
+                model.standup.meetings.remove(atOffsets: indices)
+            case .startMeeting:
+                switch authorizationStatus() {
+                    case .notDetermined, .authorized:
+                        model.destination = .record(.init(standup: model.standup))
+                    case .denied:
+                        model.destination = .alert(.speechRecognitionDenied)
+                    case .restricted:
+                        model.destination = .alert(.speechRecognitionRestricted)
+                    @unknown default:
+                        break
+                }
+            case .alertButton(let action):
+                switch action {
+                    case .confirmDeletion?:
+                        model.output(.confirmDeletion(model.standup.id))
+                        model.isDismissed = true
+                    case .continueWithoutRecording?:
+                        model.destination = .record(.init(standup: model.standup))
+                    case .openSettings?:
+                        await self.openSettings()
+                    case nil:
+                        break
+                }
+            case .doneEditing(let standup):
+                model.standup = standup
+                model.destination = nil
+                model.output(.standupEdited(standup))
+        }
+    }
+
+    func handle(input: Input, model: Model) async {
+        switch input {
+            case .record(.meetingFinished(let transcript)):
+                let didCancel = (try? await self.clock.sleep(for: .milliseconds(400))) == nil
+                withAnimation(didCancel ? nil : .default) {
+                    model.standup.meetings.insert(
+                        Meeting(
+                            id: Meeting.ID(self.uuid()),
+                            date: self.now,
+                            transcript: transcript
+                        ),
+                        at: 0
+                    )
+                    model.destination = nil
+                }
+        }
+    }
 }
 
-struct StandupDetailView: View {
-  @Environment(\.dismiss) var dismiss
-  @ObservedObject var model: StandupDetailModel
+struct StandupDetailView: ComponentView {
 
-  var body: some View {
-    List {
-      Section {
-        Button {
-          self.model.startMeetingButtonTapped()
-        } label: {
-          Label("Start Meeting", systemImage: "timer")
-            .font(.headline)
-            .foregroundColor(.accentColor)
-        }
-        HStack {
-          Label("Length", systemImage: "clock")
-          Spacer()
-          Text(self.model.standup.duration.formatted(.units()))
-        }
+    @Environment(\.dismiss) var dismiss
+    @ObservedObject var model: ViewModel<StandupDetailModel>
 
-        HStack {
-          Label("Theme", systemImage: "paintpalette")
-          Spacer()
-          Text(self.model.standup.theme.name)
-            .padding(4)
-            .foregroundColor(self.model.standup.theme.accentColor)
-            .background(self.model.standup.theme.mainColor)
-            .cornerRadius(4)
-        }
-      } header: {
-        Text("Standup Info")
-      }
+    var view: some View {
+        List {
+            Section {
+                model.button(.startMeeting) {
+                    Label("Start Meeting", systemImage: "timer")
+                        .font(.headline)
+                        .foregroundColor(.accentColor)
+                }
+                HStack {
+                    Label("Length", systemImage: "clock")
+                    Spacer()
+                    Text(model.standup.duration.formatted(.units()))
+                }
 
-      if !self.model.standup.meetings.isEmpty {
-        Section {
-          ForEach(self.model.standup.meetings) { meeting in
-            Button {
-              self.model.meetingTapped(meeting)
-            } label: {
-              HStack {
-                Image(systemName: "calendar")
-                Text(meeting.date, style: .date)
-                Text(meeting.date, style: .time)
-              }
+                HStack {
+                    Label("Theme", systemImage: "paintpalette")
+                    Spacer()
+                    Text(model.standup.theme.name)
+                        .padding(4)
+                        .foregroundColor(model.standup.theme.accentColor)
+                        .background(model.standup.theme.mainColor)
+                        .cornerRadius(4)
+                }
+            } header: {
+                Text("Standup Info")
             }
-          }
-          .onDelete { indices in
-            self.model.deleteMeetings(atOffsets: indices)
-          }
-        } header: {
-          Text("Past meetings")
-        }
-      }
 
-      Section {
-        ForEach(self.model.standup.attendees) { attendee in
-          Label(attendee.name, systemImage: "person")
-        }
-      } header: {
-        Text("Attendees")
-      }
+            if !model.standup.meetings.isEmpty {
+                Section {
+                    ForEach(model.standup.meetings) { meeting in
+                        model.button(.tapMeeting(meeting)) {
+                            HStack {
+                                Image(systemName: "calendar")
+                                Text(meeting.date, style: .date)
+                                Text(meeting.date, style: .time)
+                            }
+                        }
+                    }
+                    .onDelete { indices in
+                        model.send(.deleteMeetings(indices))
+                    }
+                } header: {
+                    Text("Past meetings")
+                }
+            }
 
-      Section {
-        Button("Delete") {
-          self.model.deleteButtonTapped()
+            Section {
+                ForEach(model.standup.attendees) { attendee in
+                    Label(attendee.name, systemImage: "person")
+                }
+            } header: {
+                Text("Attendees")
+            }
+
+            Section {
+                model.button(.delete, "Delete")
+                .foregroundColor(.red)
+                .frame(maxWidth: .infinity)
+            }
         }
-        .foregroundColor(.red)
-        .frame(maxWidth: .infinity)
-      }
-    }
-    .navigationTitle(self.model.standup.title)
-    .toolbar {
-      Button("Edit") {
-        self.model.editButtonTapped()
-      }
-    }
-    .navigationDestination(
-      unwrapping: self.$model.destination,
-      case: /StandupDetailModel.Destination.meeting
-    ) { $meeting in
-      MeetingView(meeting: meeting, standup: self.model.standup)
-    }
-    .navigationDestination(
-      unwrapping: self.$model.destination,
-      case: /StandupDetailModel.Destination.record
-    ) { $model in
-      RecordMeetingView(model: model)
-    }
-    .alert(
-      unwrapping: self.$model.destination,
-      case: /StandupDetailModel.Destination.alert
-    ) { action in
-      await self.model.alertButtonTapped(action)
-    }
-    .sheet(
-      unwrapping: self.$model.destination,
-      case: /StandupDetailModel.Destination.edit
-    ) { $editModel in
-      NavigationStack {
-        StandupFormView(model: editModel)
-          .navigationTitle(self.model.standup.title)
-          .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-              Button("Cancel") {
-                self.model.cancelEditButtonTapped()
-              }
+        .navigationTitle(model.standup.title)
+        .toolbar {
+            model.button(.edit, "Edit")
+        }
+        .navigationDestination(
+            unwrapping: model.binding(\.destination),
+            case: /StandupDetailModel.Destination.meeting
+        ) { $meeting in
+            MeetingView(meeting: meeting, standup: model.standup)
+        }
+        .navigationDestination(
+            unwrapping: model.binding(\.destination),
+            case: /StandupDetailModel.Destination.record
+        ) { $state in
+            RecordMeetingView(model: model.scope(state: state, output: Model.Input.record))
+        }
+        .alert(
+            unwrapping: model.binding(\.destination),
+            case: /StandupDetailModel.Destination.alert
+        ) { action in
+            model.send(.alertButton(action))
+        }
+        .sheet(
+            unwrapping: model.binding(\.destination),
+            case: /StandupDetailModel.Destination.edit
+        ) { $state in
+            NavigationStack {
+                StandupFormView(model: model.scope(state: $state))
+                    .navigationTitle(model.standup.title)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            model.button(.cancel, "Cancel")
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            model.button(.doneEditing(state.standup), "Done")
+                        }
+                    }
             }
-            ToolbarItem(placement: .confirmationAction) {
-              Button("Done") {
-                self.model.doneEditingButtonTapped()
-              }
-            }
-          }
-      }
+        }
+        .onChange(of: model.isDismissed) { _ in self.dismiss() }
     }
-    .onChange(of: self.model.isDismissed) { _ in self.dismiss() }
-  }
 }
 
 extension AlertState where Action == StandupDetailModel.AlertAction {
-  static let deleteStandup = Self {
-    TextState("Delete?")
-  } actions: {
-    ButtonState(role: .destructive, action: .confirmDeletion) {
-      TextState("Yes")
+    static let deleteStandup = Self {
+        TextState("Delete?")
+    } actions: {
+        ButtonState(role: .destructive, action: .confirmDeletion) {
+            TextState("Yes")
+        }
+        ButtonState(role: .cancel) {
+            TextState("Nevermind")
+        }
+    } message: {
+        TextState("Are you sure you want to delete this meeting?")
     }
-    ButtonState(role: .cancel) {
-      TextState("Nevermind")
-    }
-  } message: {
-    TextState("Are you sure you want to delete this meeting?")
-  }
 
-  static let speechRecognitionDenied = Self {
-    TextState("Speech recognition denied")
-  } actions: {
-    ButtonState(action: .continueWithoutRecording) {
-      TextState("Continue without recording")
-    }
-    ButtonState(action: .openSettings) {
-      TextState("Open settings")
-    }
-    ButtonState(role: .cancel) {
-      TextState("Cancel")
-    }
-  } message: {
-    TextState("""
+    static let speechRecognitionDenied = Self {
+        TextState("Speech recognition denied")
+    } actions: {
+        ButtonState(action: .continueWithoutRecording) {
+            TextState("Continue without recording")
+        }
+        ButtonState(action: .openSettings) {
+            TextState("Open settings")
+        }
+        ButtonState(role: .cancel) {
+            TextState("Cancel")
+        }
+    } message: {
+        TextState("""
       You previously denied speech recognition and so your meeting meeting will not be \
       recorded. You can enable speech recognition in settings, or you can continue without \
       recording.
       """)
-  }
+    }
 
-  static let speechRecognitionRestricted = Self {
-    TextState("Speech recognition restricted")
-  } actions: {
-    ButtonState(action: .continueWithoutRecording) {
-      TextState("Continue without recording")
-    }
-    ButtonState(role: .cancel) {
-      TextState("Cancel")
-    }
-  } message: {
-    TextState("""
+    static let speechRecognitionRestricted = Self {
+        TextState("Speech recognition restricted")
+    } actions: {
+        ButtonState(action: .continueWithoutRecording) {
+            TextState("Continue without recording")
+        }
+        ButtonState(role: .cancel) {
+            TextState("Cancel")
+        }
+    } message: {
+        TextState("""
       Your device does not support speech recognition and so your meeting will not be recorded.
       """)
-  }
+    }
 }
 
 struct MeetingView: View {
-  let meeting: Meeting
-  let standup: Standup
+    let meeting: Meeting
+    let standup: Standup
 
-  var body: some View {
-    ScrollView {
-      VStack(alignment: .leading) {
-        Divider()
-          .padding(.bottom)
-        Text("Attendees")
-          .font(.headline)
-        ForEach(self.standup.attendees) { attendee in
-          Text(attendee.name)
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading) {
+                Divider()
+                    .padding(.bottom)
+                Text("Attendees")
+                    .font(.headline)
+                ForEach(self.standup.attendees) { attendee in
+                    Text(attendee.name)
+                }
+                Text("Transcript")
+                    .font(.headline)
+                    .padding(.top)
+                Text(self.meeting.transcript)
+            }
         }
-        Text("Transcript")
-          .font(.headline)
-          .padding(.top)
-        Text(self.meeting.transcript)
-      }
+        .navigationTitle(Text(self.meeting.date, style: .date))
+        .padding()
     }
-    .navigationTitle(Text(self.meeting.date, style: .date))
-    .padding()
-  }
 }
 
-struct StandupDetail_Previews: PreviewProvider {
-  static var previews: some View {
-    Preview(
-      message: """
-        This preview demonstrates the "happy path" of the application where everything works \
-        perfectly. You can start a meeting, wait a few moments, end the meeting, and you will \
-        see that a new transcription was added to the past meetings. The transcript will consist \
-        of some "lorem ipsum" text because a mock speech recongizer is used for Xcode previews.
-        """
-    ) {
-      NavigationStack {
-        StandupDetailView(model: StandupDetailModel(standup: .mock))
-      }
-    }
-    .previewDisplayName("Happy path")
+struct StandupDetailFeature: PreviewProvider, ComponentFeature {
 
-    Preview(
-      message: """
-        This preview demonstrates an "unhappy path" of the application where the speech \
-        recognizer mysteriously fails after 2 seconds of recording. This gives us an opportunity \
-        to see how the application deals with this rare occurence. To see the behavior, run the \
-        preview, tap the "Start Meeting" button and wait 2 seconds.
-        """
-    ) {
-      NavigationStack {
-        StandupDetailView(
-          model: withDependencies {
-            $0.speechClient = .fail(after: .seconds(2))
-          } operation: {
-            StandupDetailModel(standup: .mock)
-          }
-        )
-      }
-    }
-    .previewDisplayName("Speech recognition failed")
+    typealias Model = StandupDetailModel
 
-    Preview(
-      message: """
-        This preview demonstrates how the feature behaves when access to speech recognition has \
-        been previously denied by the user. Tap the "Start Meeting" button to see how we handle \
-        that situation.
-        """
-    ) {
-      NavigationStack {
-        StandupDetailView(
-          model: withDependencies {
-            $0.speechClient.authorizationStatus = { .denied }
-          } operation: {
-            StandupDetailModel(standup: .mock)
-          }
-        )
-      }
+    static func createView(model: ViewModel<StandupDetailModel>) -> some View {
+        NavigationView {
+            StandupDetailView(model: model)
+        }
     }
-    .previewDisplayName("Speech recognition denied")
 
-    Preview(
-      message: """
-        This preview demonstrates how the feature behaves when the device restricts access to \
-        speech recognition APIs. Tap the "Start Meeting" button to see how we handle that \
-        situation.
-        """
-    ) {
-      NavigationStack {
-        StandupDetailView(
-          model: withDependencies {
-            $0.speechClient.authorizationStatus = { .restricted }
-          } operation: {
-            StandupDetailModel(standup: .mock)
-          }
-        )
-      }
+    static var states: [ComponentState] {
+        ComponentState("default") {
+            .init(standup: .mock)
+        }
+        ComponentState("speech denied") {
+            .init(destination: .alert(.speechRecognitionDenied), standup: .mock)
+        }
+        ComponentState("speech restricted") {
+            .init(destination: .alert(.speechRecognitionRestricted), standup: .mock)
+        }
     }
-    .previewDisplayName("Speech recognition restricted")
-  }
+
+    static var tests: [ComponentTest] {
+        ComponentTest("speech restricted", stateName: "default") {
+            Step.setDependency(\.speechClient.authorizationStatus, { .restricted })
+            Step.action(.startMeeting)
+                .expectState(\.destination, .alert(.speechRecognitionRestricted))
+            Step.setBinding(\.destination, nil)
+        }
+
+        ComponentTest("speech denied", stateName: "default") {
+            Step.setDependency(\.speechClient.authorizationStatus, { .denied })
+            Step.action(.startMeeting)
+                .expectState(\.destination, .alert(.speechRecognitionDenied))
+            Step.setBinding(\.destination, nil)
+        }
+
+        ComponentTest("open settings", stateName: "default") {
+            Step.setDependency(\.speechClient.authorizationStatus, { .denied })
+            Step.action(.startMeeting)
+                .expectState(\.destination, .alert(.speechRecognitionDenied))
+            let settingsOpened = LockIsolated(false)
+            Step.setDependency(\.openSettings, { settingsOpened.setValue(true) })
+            Step.setBinding(\.destination, nil)
+            Step.action(.alertButton(.openSettings))
+                .validateState("settings opened") { _ in
+                    settingsOpened.value == true
+                }
+        }
+
+        ComponentTest("continue without recording", state: .init(standup: .mock)) {
+            Step.setDependency(\.speechClient.authorizationStatus, { .denied })
+            Step.action(.startMeeting)
+                .expectState(\.destination, .alert(.speechRecognitionDenied))
+            Step.setBinding(\.destination, nil)
+            Step.action(.alertButton(.continueWithoutRecording))
+                .validateState("is recording") { state in
+                    guard case let .record(state) = state.destination else { return false}
+                    return state.standup == .mock
+                }
+        }
+
+        ComponentTest("speech authorized", stateName: "default") {
+            Step.setDependency(\.speechClient.authorizationStatus, { .authorized })
+            Step.action(.startMeeting)
+                .validateState("is recording") { state in
+                    guard case let .record(model) = state.destination else { return false}
+                    return model.standup == .mock
+                }
+        }
+
+        let standup = Standup(id: .init(uuidString: "00000000-0000-0000-0000-000000000000")!)
+        ComponentTest("record transcript", state: .init(standup: standup)) {
+            Step.setDependency(\.uuid, .incrementing)
+            Step.setDependency(\.date, .constant(Date(timeIntervalSince1970: 1_234_567_890)))
+            Step.action(.startMeeting)
+                .expectState(\.destination, .record(.init(standup: standup)))
+            Step.input(.record(.meetingFinished(transcript: "Hello")))
+                .expectState {
+                    $0.standup.meetings = [
+                        Meeting(
+                            id: Meeting.ID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+                            date: Date(timeIntervalSince1970: 1_234_567_890),
+                            transcript: "Hello"
+                        )
+                    ]
+                }
+        }
+
+        let editedStandup: Standup = {
+            var standup = standup
+            standup.title = "Engineering"
+            return standup
+        }()
+        ComponentTest("edit", state: .init(standup: standup)) {
+            Step.action(.edit)
+                .expectState(\.destination, .edit(.init(standup: standup)))
+            Step.setBinding(\.destination, .edit(.init(standup: editedStandup)))
+            Step.action(.doneEditing(editedStandup))
+                .expectState(\.standup, editedStandup)
+                .expectOutput(.standupEdited(editedStandup))
+        }
+    }
+
 }

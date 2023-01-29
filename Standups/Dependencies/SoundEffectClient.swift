@@ -35,6 +35,8 @@ extension SoundEffectClient: DependencyKey {
     load: { _ in },
     play: {}
   )
+
+  static var previewValue: SoundEffectClient = .noop
 }
 
 extension DependencyValues {
