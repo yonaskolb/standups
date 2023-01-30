@@ -82,6 +82,7 @@ struct StandupFormView: ComponentView {
                 Text("Attendees")
             }
         }
+        // this causes a crash when run in preview
 //        .bind(model.binding(\.focus), to: self.$focus)
     }
 }

@@ -5,9 +5,9 @@ struct SpeechClient {
   var authorizationStatus: @Sendable () -> SFSpeechRecognizerAuthorizationStatus
   var requestAuthorization: @Sendable () async -> SFSpeechRecognizerAuthorizationStatus
   var startTask:
-    @Sendable (SFSpeechAudioBufferRecognitionRequest) async -> AsyncThrowingStream<
-      SpeechRecognitionResult, Error
-    >
+  @Sendable (SFSpeechAudioBufferRecognitionRequest) async -> AsyncThrowingStream<
+    SpeechRecognitionResult, Error
+  >
 }
 
 extension SpeechClient: DependencyKey {
@@ -69,12 +69,6 @@ extension SpeechClient: DependencyKey {
     )
   }
 
-  static let testValue = SpeechClient(
-    authorizationStatus: unimplemented("SpeechClient.authorizationStatus", placeholder: .denied),
-    requestAuthorization: unimplemented("SpeechClient.requestAuthorization", placeholder: .denied),
-    startTask: unimplemented("SpeechClient.startTask")
-  )
-
   static func fail(after duration: Duration) -> Self {
     return Self(
       authorizationStatus: { .authorized },
@@ -97,6 +91,29 @@ extension SpeechClient: DependencyKey {
             } catch {
               continuation.finish(throwing: error)
             }
+          }
+        }
+      }
+    )
+  }
+
+  static func string(_ string: String, fail: Bool = false) -> Self {
+    return Self(
+      authorizationStatus: { .authorized },
+      requestAuthorization: { .authorized },
+      startTask: { _ in
+        AsyncThrowingStream { continuation in
+          continuation.yield(
+            SpeechRecognitionResult(
+              bestTranscription: Transcription(formattedString: string),
+              isFinal: true
+            )
+          )
+          if fail {
+            struct SpeechRecognitionFailure: Error {}
+            continuation.finish(throwing: SpeechRecognitionFailure())
+          } else {
+            continuation.finish()
           }
         }
       }
@@ -137,7 +154,7 @@ private actor Speech {
   private var audioEngine: AVAudioEngine? = nil
   private var recognitionTask: SFSpeechRecognitionTask? = nil
   private var recognitionContinuation:
-    AsyncThrowingStream<SpeechRecognitionResult, Error>.Continuation?
+  AsyncThrowingStream<SpeechRecognitionResult, Error>.Continuation?
 
   func startTask(
     request: SFSpeechAudioBufferRecognitionRequest
@@ -157,12 +174,12 @@ private actor Speech {
       let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))!
       self.recognitionTask = speechRecognizer.recognitionTask(with: request) { result, error in
         switch (result, error) {
-        case let (.some(result), _):
-          continuation.yield(SpeechRecognitionResult(result))
-        case (_, .some):
-          continuation.finish(throwing: error)
-        case (.none, .none):
-          fatalError("It should not be possible to have both a nil result and nil error.")
+          case let (.some(result), _):
+            continuation.yield(SpeechRecognitionResult(result))
+          case (_, .some):
+            continuation.finish(throwing: error)
+          case (.none, .none):
+            fatalError("It should not be possible to have both a nil result and nil error.")
         }
       }
 

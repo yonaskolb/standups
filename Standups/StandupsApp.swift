@@ -2,6 +2,7 @@ import Dependencies
 import SwiftUI
 import SwiftComponent
 import Combine
+import Foundation
 
 @main
 struct StandupsApp: App {
@@ -10,7 +11,23 @@ struct StandupsApp: App {
 
     init() {
         eventSubscription = EventStore.shared.eventPublisher.sink { event in
-            print("Component \(event.description)")
+
+            let valueSuffix: String
+            switch event.type {
+                case .mutation, .binding:
+                    let value = event.type.value
+                    let valueString = dumpToString(value, maxDepth: 2)
+                    if valueString == "\"\"" {
+                        valueSuffix = ""
+                    } else if valueString.contains("\n") {
+                        valueSuffix = "\n\t" + valueString.replacingOccurrences(of: "\n", with: "\n\t")
+                    } else {
+                        valueSuffix = " = \(valueString)"
+                    }
+                    print("\(event.type.emoji) \(event.description)\(valueSuffix)")
+                default:
+                    valueSuffix = ""
+            }
         }
     }
 
@@ -25,13 +42,14 @@ struct StandupsApp: App {
             } else if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
                 // Unit test
                 EmptyView()
-            } else {
+            } else if ProcessInfo.processInfo.arguments.contains("feature-list") {
                 // feature list
-//                withDependencies {
-//                    $0.context = .preview
-//                } operation: {
-//                    FeatureListView(features: features)
-//                }
+                withDependencies {
+                    $0.context = .preview
+                } operation: {
+                    FeatureListView(features: features)
+                }
+            } else {
                 StandupsList(model: .init(state: .init()))
             }
         }

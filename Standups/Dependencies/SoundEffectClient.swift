@@ -26,11 +26,6 @@ extension SoundEffectClient: DependencyKey {
     )
   }
 
-  static let testValue = Self(
-    load: unimplemented("SoundEffectClient.load"),
-    play: unimplemented("SoundEffectClient.play")
-  )
-
   static let noop = Self(
     load: { _ in },
     play: {}

@@ -26,10 +26,10 @@
 		CA350CC52984515C00434F8A /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = CA350CC42984515C00434F8A /* Dependencies */; };
 		CA350CCF2984518A00434F8A /* StandupsListUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA350CCE2984518A00434F8A /* StandupsListUITests.swift */; };
 		CA350CD2298452F300434F8A /* ding.wav in Resources */ = {isa = PBXBuildFile; fileRef = CA350CD1298452F300434F8A /* ding.wav */; };
+		CC498D222986B90000396AE0 /* Runtime in Frameworks */ = {isa = PBXBuildFile; productRef = CC498D212986B90000396AE0 /* Runtime */; };
 		CC5D01D2298533ED007889A8 /* Features.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5D01D1298533ED007889A8 /* Features.swift */; };
 		CC5D01D429853402007889A8 /* FeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5D01D329853402007889A8 /* FeatureTests.swift */; };
 		CC5D01D829853468007889A8 /* SwiftComponent in Frameworks */ = {isa = PBXBuildFile; productRef = CC5D01D729853468007889A8 /* SwiftComponent */; };
-		CC5D01DB29853EAD007889A8 /* Runtime in Frameworks */ = {isa = PBXBuildFile; productRef = CC5D01DA29853EAD007889A8 /* Runtime */; };
 		CC5D01E029853F03007889A8 /* Quick in Frameworks */ = {isa = PBXBuildFile; productRef = CC5D01DF29853F03007889A8 /* Quick */; };
 		CC5D01E22985644C007889A8 /* Runtime in Frameworks */ = {isa = PBXBuildFile; productRef = CC5D01E12985644C007889A8 /* Runtime */; };
 		CC5D01E42986491C007889A8 /* TestSteps.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5D01E32986491C007889A8 /* TestSteps.swift */; };
@@ -62,7 +62,7 @@
 		CA350CA2298450BF00434F8A /* RecordMeeting.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RecordMeeting.swift; sourceTree = "<group>"; };
 		CA350CA3298450BF00434F8A /* StandupForm.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StandupForm.swift; sourceTree = "<group>"; };
 		CA350CA5298450BF00434F8A /* DataManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
-		CA350CA6298450BF00434F8A /* SpeechClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SpeechClient.swift; sourceTree = "<group>"; };
+		CA350CA6298450BF00434F8A /* SpeechClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = SpeechClient.swift; sourceTree = "<group>"; };
 		CA350CA7298450BF00434F8A /* OpenSettings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenSettings.swift; sourceTree = "<group>"; };
 		CA350CA8298450BF00434F8A /* SoundEffectClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SoundEffectClient.swift; sourceTree = "<group>"; };
 		CA350CA9298450BF00434F8A /* StandupsList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StandupsList.swift; sourceTree = "<group>"; };
@@ -71,6 +71,7 @@
 		CA350CAC298450BF00434F8A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CA350CCE2984518A00434F8A /* StandupsListUITests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StandupsListUITests.swift; sourceTree = "<group>"; };
 		CA350CD1298452F300434F8A /* ding.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = ding.wav; sourceTree = "<group>"; };
+		CC498D20298691CF00396AE0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		CC5D01D1298533ED007889A8 /* Features.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Features.swift; sourceTree = "<group>"; };
 		CC5D01D329853402007889A8 /* FeatureTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FeatureTests.swift; sourceTree = "<group>"; };
 		CC5D01D52985344C007889A8 /* SwiftComponent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = SwiftComponent; path = ../SwiftComponent; sourceTree = "<group>"; };
@@ -96,7 +97,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CC5D01E029853F03007889A8 /* Quick in Frameworks */,
-				CC5D01DB29853EAD007889A8 /* Runtime in Frameworks */,
+				CC498D222986B90000396AE0 /* Runtime in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -135,6 +136,7 @@
 		CA350C732984506E00434F8A /* Standups */ = {
 			isa = PBXGroup;
 			children = (
+				CC498D20298691CF00396AE0 /* Info.plist */,
 				CC5D01D1298533ED007889A8 /* Features.swift */,
 				CA350CAB298450BF00434F8A /* Helpers.swift */,
 				CA350CAA298450BF00434F8A /* Models.swift */,
@@ -245,8 +247,8 @@
 			);
 			name = StandupsTests;
 			packageProductDependencies = (
-				CC5D01DA29853EAD007889A8 /* Runtime */,
 				CC5D01DF29853F03007889A8 /* Quick */,
+				CC498D212986B90000396AE0 /* Runtime */,
 			);
 			productName = StandupsTests;
 			productReference = CA350C812984506F00434F8A /* StandupsTests.xctest */;
@@ -527,8 +529,8 @@
 				DEVELOPMENT_ASSET_PATHS = "\"Standups/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Standups/Info.plist;
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "To transcribe meeting notes.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -556,8 +558,8 @@
 				DEVELOPMENT_ASSET_PATHS = "\"Standups/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Standups/Info.plist;
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "To transcribe meeting notes.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -786,14 +788,14 @@
 			package = CA350CC32984515C00434F8A /* XCRemoteSwiftPackageReference "swift-dependencies" */;
 			productName = Dependencies;
 		};
-		CC5D01D729853468007889A8 /* SwiftComponent */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = SwiftComponent;
-		};
-		CC5D01DA29853EAD007889A8 /* Runtime */ = {
+		CC498D212986B90000396AE0 /* Runtime */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CC5D01D929853EAD007889A8 /* XCRemoteSwiftPackageReference "Runtime" */;
 			productName = Runtime;
+		};
+		CC5D01D729853468007889A8 /* SwiftComponent */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SwiftComponent;
 		};
 		CC5D01DF29853F03007889A8 /* Quick */ = {
 			isa = XCSwiftPackageProductDependency;

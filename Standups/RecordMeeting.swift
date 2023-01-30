@@ -15,7 +15,6 @@ struct RecordMeetingModel: ComponentModel {
     struct State {
         var standup: Standup
         var destination: Destination?
-        var isDismissed = false
         var secondsElapsed = 0
         var speakerIndex = 0
         fileprivate var transcript = ""
@@ -43,6 +42,7 @@ struct RecordMeetingModel: ComponentModel {
     }
 
     enum Output {
+        case dismiss
         case meetingFinished(transcript: String)
     }
 
@@ -103,7 +103,7 @@ struct RecordMeetingModel: ComponentModel {
                     case .confirmSave?:
                         finishMeeting(model: model)
                     case .confirmDiscard?:
-                        model.isDismissed = true
+                        model.output(.dismiss)
                     case .none: break
                 }
                 model.destination = nil
@@ -113,7 +113,6 @@ struct RecordMeetingModel: ComponentModel {
     }
 
     private func finishMeeting(model: Model) {
-        model.isDismissed = true
         model.output(.meetingFinished(transcript: model.transcript))
     }
 
@@ -133,8 +132,6 @@ struct RecordMeetingModel: ComponentModel {
 
     private func startTimer(model: Model) async {
         for await _ in self.clock.timer(interval: .seconds(1)) where !model.state.isAlertOpen {
-            guard !model.isDismissed
-            else { break }
 
             model.secondsElapsed += 1
 
@@ -231,7 +228,6 @@ struct RecordMeetingView: ComponentView {
         ) { action in
             model.send(.alertButton(action))
         }
-        .onChange(of: model.isDismissed) { _ in self.dismiss() }
     }
 }
 
@@ -414,7 +410,6 @@ struct RecordMeetingFeature: PreviewProvider, ComponentFeature {
         ComponentTest("timer", stateName: "quick") {
             let soundEffectPlayCount = LockIsolated(0)
             Step.setDependency(\.speechClient.authorizationStatus, { .denied })
-            Step.setDependency(\.soundEffectClient, .noop)
             Step.setDependency(\.continuousClock, TestClock())
             Step.setDependency(\.soundEffectClient.play, { soundEffectPlayCount.withValue { $0 += 1 } })
             Step.appear(await: false)
@@ -438,30 +433,14 @@ struct RecordMeetingFeature: PreviewProvider, ComponentFeature {
         }
 
         ComponentTest("record transcript", stateName: "default") {
-            Step.setDependency(\.speechClient.authorizationStatus, { .authorized })
+            Step.setDependency(\.speechClient, .string("hello"))
             Step.setDependency(\.continuousClock, ImmediateClock())
-            Step.setDependency(\.soundEffectClient, .noop)
-            Step.setDependency(\.speechClient.startTask, { _ in
-                AsyncThrowingStream { continuation in
-                    continuation.yield(
-                        SpeechRecognitionResult(
-                            bestTranscription: Transcription(formattedString: "I completed the project"),
-                            isFinal: true
-                        )
-                    )
-                    continuation.finish()
-                }}
-            )
             Step.appear()
-                .expectState {
-                    $0.isDismissed = true
-                }
-                .expectOutput(.meetingFinished(transcript: "I completed the project"))
+                .expectOutput(.meetingFinished(transcript: "hello"))
         }
 
         ComponentTest("end meeting save", stateName: "default") {
             Step.setDependency(\.speechClient.authorizationStatus, { .denied })
-            Step.setDependency(\.soundEffectClient, .noop)
             Step.setDependency(\.continuousClock, TestClock())
             Step.appear(await: false)
             Step.action(.endMeeting)
@@ -484,14 +463,12 @@ struct RecordMeetingFeature: PreviewProvider, ComponentFeature {
                     $0.destination = .alert(.endMeeting(isDiscardable: true))
                 }
             Step.action(.alertButton(.confirmDiscard))
-                .expectState {
-                    $0.isDismissed = true
-                }
+                .expectOutput(.dismiss)
         }
 
         ComponentTest("next speaker", stateName: "quick") {
             let soundEffectPlayCount = LockIsolated(0)
-            Step.setDependency(\.soundEffectClient, .noop)
+            Step.setDependency(\.speechClient, .string("hello"))
             Step.setDependency(\.continuousClock, TestClock())
             Step.setDependency(\.soundEffectClient.play, { soundEffectPlayCount.withValue { $0 += 1 } })
             Step.appear(await: false)
@@ -511,9 +488,7 @@ struct RecordMeetingFeature: PreviewProvider, ComponentFeature {
                     soundEffectPlayCount.value == 1
                 }
             Step.action(.nextSpeaker)
-                .expectState {
-                    $0.destination = .alert(.endMeeting(isDiscardable: false))
-                }
+                .expectState(\.destination, .alert(.endMeeting(isDiscardable: false)))
             Step.advanceClock()
                 .expectState {
                     $0.speakerIndex = 1
@@ -524,23 +499,11 @@ struct RecordMeetingFeature: PreviewProvider, ComponentFeature {
                     soundEffectPlayCount.value == 1
                 }
             Step.action(.alertButton(.confirmSave))
-                .expectOutput(.meetingFinished(transcript: ""))
+                .expectOutput(.meetingFinished(transcript: "hello"))
         }
 
         ComponentTest("speech failure continue", stateName: "quick") {
-            Step.setDependency(\.speechClient.startTask, { _ in
-                AsyncThrowingStream {
-                    $0.yield(
-                        SpeechRecognitionResult(
-                            bestTranscription: Transcription(formattedString: "I completed the project"),
-                            isFinal: true
-                        )
-                    )
-                    struct SpeechRecognitionFailure: Error {}
-                    $0.finish(throwing: SpeechRecognitionFailure())
-                }}
-            )
-            Step.setDependency(\.soundEffectClient, .noop)
+            Step.setDependency(\.speechClient, .string("I completed the project", fail: true))
             Step.setDependency(\.continuousClock, TestClock())
             Step.appear(await: false)
             Step.advanceClock()
@@ -548,38 +511,19 @@ struct RecordMeetingFeature: PreviewProvider, ComponentFeature {
                     $0.destination = .alert(.speechRecognizerFailed)
                 }
             Step.action(.alertButton(.none))
-                .expectState {
-                    $0.destination = nil
-                    $0.isDismissed = false
-                }
+                .expectState(\.destination, nil)
             Step.advanceClock(.seconds(60))
                 .expectOutput(.meetingFinished(transcript: "I completed the project ❌"))
         }
 
         ComponentTest("speech failure discard", stateName: "quick") {
-            Step.setDependency(\.speechClient.startTask, { _ in
-                AsyncThrowingStream {
-                    $0.yield(
-                        SpeechRecognitionResult(
-                            bestTranscription: Transcription(formattedString: "I completed the project"),
-                            isFinal: true
-                        )
-                    )
-                    struct SpeechRecognitionFailure: Error {}
-                    $0.finish(throwing: SpeechRecognitionFailure())
-                }}
-            )
-            Step.setDependency(\.soundEffectClient, .noop)
+            Step.setDependency(\.speechClient, .string("", fail: true))
             Step.setDependency(\.continuousClock, TestClock())
             Step.appear(await: false)
             Step.advanceClock()
-                .expectState {
-                    $0.destination = .alert(.speechRecognizerFailed)
-                }
+                .expectState(\.destination, .alert(.speechRecognizerFailed))
             Step.action(.alertButton(.confirmDiscard))
-                .expectState {
-                    $0.isDismissed = true
-                }
+                .expectOutput(.dismiss)
         }
     }
 }

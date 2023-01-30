@@ -107,6 +107,7 @@ struct StandupsListModel: ComponentModel {
                 }
             case .detail(.standupEdited(let standup)):
                 model.standups[id: standup.id] = standup
+                model.destination = nil
         }
     }
 }
@@ -315,6 +316,7 @@ struct StandupsListFeature: PreviewProvider, ComponentFeature {
                 .expectState(\.destination, .alert(.dataFailedToLoad))
             Step.action(.alertButton(.confirmLoadMockData))
                 .expectState(\.standups, [.mock, .designMock, .engineeringMock])
+            Step.setBinding(\.destination, nil)
         }
 
         ComponentTest("load silent failure", state: .init()) {

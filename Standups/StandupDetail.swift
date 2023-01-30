@@ -16,7 +16,6 @@ struct StandupDetailModel: ComponentModel {
 
     struct State {
         var destination: Destination?
-        var isDismissed = false
         var standup: Standup
     }
 
@@ -80,7 +79,6 @@ struct StandupDetailModel: ComponentModel {
                 switch action {
                     case .confirmDeletion?:
                         model.output(.confirmDeletion(model.standup.id))
-                        model.isDismissed = true
                     case .continueWithoutRecording?:
                         model.destination = .record(.init(standup: model.standup))
                     case .openSettings?:
@@ -110,13 +108,14 @@ struct StandupDetailModel: ComponentModel {
                     )
                     model.destination = nil
                 }
+            case .record(.dismiss):
+                model.destination = nil
         }
     }
 }
 
 struct StandupDetailView: ComponentView {
 
-    @Environment(\.dismiss) var dismiss
     @ObservedObject var model: ViewModel<StandupDetailModel>
 
     var view: some View {
@@ -206,7 +205,7 @@ struct StandupDetailView: ComponentView {
             case: /StandupDetailModel.Destination.edit
         ) { $state in
             NavigationStack {
-                StandupFormView(model: model.scope(state: $state))
+                StandupFormView(model: model.scope(state: state))
                     .navigationTitle(model.standup.title)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
@@ -218,7 +217,6 @@ struct StandupDetailView: ComponentView {
                     }
             }
         }
-        .onChange(of: model.isDismissed) { _ in self.dismiss() }
     }
 }
 
