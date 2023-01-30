@@ -22,28 +22,28 @@ struct StandupFormModel: ComponentModel {
         case addAttendee
     }
 
-    func appear(model: Model) async {
-        if model.standup.attendees.isEmpty {
-            model.standup.attendees.append(Attendee(id: Attendee.ID(self.uuid())))
+    func appear(store: Store) async {
+        if store.standup.attendees.isEmpty {
+            store.standup.attendees.append(Attendee(id: Attendee.ID(self.uuid())))
         }
     }
 
-    func handle(action: Action, model: Model) async {
+    func handle(action: Action, store: Store) async {
         switch action {
             case .addAttendee:
                 let attendee = Attendee(id: Attendee.ID(self.uuid()))
-                model.standup.attendees.append(attendee)
-                model.focus = .attendee(attendee.id)
+                store.standup.attendees.append(attendee)
+                store.focus = .attendee(attendee.id)
             case .deleteAttendees(let indices):
-                model.standup.attendees.remove(atOffsets: indices)
-                if model.standup.attendees.isEmpty {
-                    model.standup.attendees.append(Attendee(id: Attendee.ID(self.uuid())))
+                store.standup.attendees.remove(atOffsets: indices)
+                if store.standup.attendees.isEmpty {
+                    store.standup.attendees.append(Attendee(id: Attendee.ID(self.uuid())))
                 }
 
                 guard let firstIndex = indices.first
                 else { return }
-                let index = min(firstIndex, model.standup.attendees.count - 1)
-                model.focus = .attendee(model.standup.attendees[index].id)
+                let index = min(firstIndex, store.standup.attendees.count - 1)
+                store.focus = .attendee(store.standup.attendees[index].id)
         }
     }
 }
@@ -114,22 +114,22 @@ extension Duration {
     }
 }
 
-struct StandupFormFeature: PreviewProvider, ComponentFeature {
+struct StandupFormComponent: PreviewProvider, Component {
 
     typealias Model = StandupFormModel
 
-    static func createView(model: ViewModel<StandupFormModel>) -> some View {
+    static func view(model: ViewModel<StandupFormModel>) -> some View {
         StandupFormView(model: model)
     }
 
-    static var states: [ComponentState] {
-        ComponentState("focus attendee") {
+    static var states: States {
+        State("focus attendee") {
             .init(focus: .attendee(Standup.mock.attendees[3].id), standup: .mock)
         }
     }
 
-    static var tests: [ComponentTest] {
-        ComponentTest("fill", state: .init(standup: .init(id: .init()))) {
+    static var tests: Tests {
+        Test("fill", state: .init(standup: .init(id: .init()))) {
             Step.setDependency(\.uuid, .incrementing)
             Step.appear()
             Step.setBinding(\.standup.title, "Engineering")
@@ -140,7 +140,7 @@ struct StandupFormFeature: PreviewProvider, ComponentFeature {
             Step.action(.addAttendee)
             Step.setBinding(\.standup.attendees[id: .init(uuidString: "00000000-0000-0000-0000-000000000001")!]!.name, "Sarah")
         }
-        ComponentTest("add attendee", state: .init(standup: .init(id: .init(), title: "Engineering"))) {
+        Test("add attendee", state: .init(standup: .init(id: .init(), title: "Engineering"))) {
             Step.setDependency(\.uuid, .incrementing)
             Step.appear()
                 .expectState {
@@ -157,7 +157,7 @@ struct StandupFormFeature: PreviewProvider, ComponentFeature {
                 }
         }
         let uuid = UUIDGenerator.incrementing
-        ComponentTest("remove attendee", state: .init(standup: Standup(
+        Test("remove attendee", state: .init(standup: Standup(
             id: Standup.ID(),
             attendees: [
                 Attendee(id: Attendee.ID(uuid())),

@@ -4,19 +4,19 @@ import Quick
 import SwiftComponent
 import Standups
 
-final class FeatureTests: QuickSpec {
+final class ComponentTests: QuickSpec {
 
     override func spec() {
-        for feature in Standups.features {
-            testComponent(feature)
+        for component in Standups.components {
+            testComponent(component)
         }
     }
 
-    func testComponent<Feature: ComponentFeature>( _ component: Feature.Type) {
+    func testComponent<ComponentType: Component>( _ component: ComponentType.Type) {
         describe(component.Model.baseName) {
             for test in component.tests {
                 it(test.name, file: test.source.file, line: test.source.line) {
-                    let result = await Feature.run(test)
+                    let result = await ComponentType.run(test)
                     print("\tComponent \(component.Model.baseName): \(test.name)")
                     for step in result.steps {
                         print("\t\tStep \(step.step.description)")

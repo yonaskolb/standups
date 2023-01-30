@@ -24,10 +24,11 @@ struct StandupsApp: App {
                     } else {
                         valueSuffix = " = \(valueString)"
                     }
-                    print("\(event.type.emoji) \(event.description)\(valueSuffix)")
+
                 default:
                     valueSuffix = ""
             }
+            print("\(event.type.emoji) \(event.description)\(valueSuffix)")
         }
     }
 
@@ -47,7 +48,7 @@ struct StandupsApp: App {
                 withDependencies {
                     $0.context = .preview
                 } operation: {
-                    FeatureListView(features: features)
+                    ComponentListView(components: components)
                 }
             } else {
                 StandupsList(model: .init(state: .init()))

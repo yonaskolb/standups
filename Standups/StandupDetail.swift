@@ -52,53 +52,53 @@ struct StandupDetailModel: ComponentModel {
         case openSettings
     }
 
-    func handle(action: Action, model: Model) async {
+    func handle(action: Action, store: Store) async {
         switch action {
             case .delete:
-                model.destination = .alert(.deleteStandup)
+                store.destination = .alert(.deleteStandup)
             case .edit:
-                model.destination = .edit(.init(standup: model.standup))
+                store.destination = .edit(.init(standup: store.standup))
             case .cancel:
-                model.destination = nil
+                store.destination = nil
             case .tapMeeting(let meeting):
-                model.destination = .meeting(meeting)
+                store.destination = .meeting(meeting)
             case .deleteMeetings(let indices):
-                model.standup.meetings.remove(atOffsets: indices)
+                store.standup.meetings.remove(atOffsets: indices)
             case .startMeeting:
                 switch authorizationStatus() {
                     case .notDetermined, .authorized:
-                        model.destination = .record(.init(standup: model.standup))
+                        store.destination = .record(.init(standup: store.standup))
                     case .denied:
-                        model.destination = .alert(.speechRecognitionDenied)
+                        store.destination = .alert(.speechRecognitionDenied)
                     case .restricted:
-                        model.destination = .alert(.speechRecognitionRestricted)
+                        store.destination = .alert(.speechRecognitionRestricted)
                     @unknown default:
                         break
                 }
             case .alertButton(let action):
                 switch action {
                     case .confirmDeletion?:
-                        model.output(.confirmDeletion(model.standup.id))
+                        store.output(.confirmDeletion(store.standup.id))
                     case .continueWithoutRecording?:
-                        model.destination = .record(.init(standup: model.standup))
+                        store.destination = .record(.init(standup: store.standup))
                     case .openSettings?:
                         await self.openSettings()
                     case nil:
                         break
                 }
             case .doneEditing(let standup):
-                model.standup = standup
-                model.destination = nil
-                model.output(.standupEdited(standup))
+                store.standup = standup
+                store.destination = nil
+                store.output(.standupEdited(standup))
         }
     }
 
-    func handle(input: Input, model: Model) async {
+    func handle(input: Input, store: Store) async {
         switch input {
             case .record(.meetingFinished(let transcript)):
                 let didCancel = (try? await self.clock.sleep(for: .milliseconds(400))) == nil
                 withAnimation(didCancel ? nil : .default) {
-                    model.standup.meetings.insert(
+                    store.standup.meetings.insert(
                         Meeting(
                             id: Meeting.ID(self.uuid()),
                             date: self.now,
@@ -106,10 +106,10 @@ struct StandupDetailModel: ComponentModel {
                         ),
                         at: 0
                     )
-                    model.destination = nil
+                    store.destination = nil
                 }
             case .record(.dismiss):
-                model.destination = nil
+                store.destination = nil
         }
     }
 }
@@ -295,44 +295,44 @@ struct MeetingView: View {
     }
 }
 
-struct StandupDetailFeature: PreviewProvider, ComponentFeature {
+struct StandupDetailComponent: PreviewProvider, Component {
 
     typealias Model = StandupDetailModel
 
-    static func createView(model: ViewModel<StandupDetailModel>) -> some View {
+    static func view(model: ViewModel<StandupDetailModel>) -> some View {
         NavigationView {
             StandupDetailView(model: model)
         }
     }
 
-    static var states: [ComponentState] {
-        ComponentState("default") {
+    static var states: States {
+        State("default") {
             .init(standup: .mock)
         }
-        ComponentState("speech denied") {
+        State("speech denied") {
             .init(destination: .alert(.speechRecognitionDenied), standup: .mock)
         }
-        ComponentState("speech restricted") {
+        State("speech restricted") {
             .init(destination: .alert(.speechRecognitionRestricted), standup: .mock)
         }
     }
 
-    static var tests: [ComponentTest] {
-        ComponentTest("speech restricted", stateName: "default") {
+    static var tests: Tests {
+        Test("speech restricted", stateName: "default") {
             Step.setDependency(\.speechClient.authorizationStatus, { .restricted })
             Step.action(.startMeeting)
                 .expectState(\.destination, .alert(.speechRecognitionRestricted))
             Step.setBinding(\.destination, nil)
         }
 
-        ComponentTest("speech denied", stateName: "default") {
+        Test("speech denied", stateName: "default") {
             Step.setDependency(\.speechClient.authorizationStatus, { .denied })
             Step.action(.startMeeting)
                 .expectState(\.destination, .alert(.speechRecognitionDenied))
             Step.setBinding(\.destination, nil)
         }
 
-        ComponentTest("open settings", stateName: "default") {
+        Test("open settings", stateName: "default") {
             Step.setDependency(\.speechClient.authorizationStatus, { .denied })
             Step.action(.startMeeting)
                 .expectState(\.destination, .alert(.speechRecognitionDenied))
@@ -345,7 +345,7 @@ struct StandupDetailFeature: PreviewProvider, ComponentFeature {
                 }
         }
 
-        ComponentTest("continue without recording", state: .init(standup: .mock)) {
+        Test("continue without recording", state: .init(standup: .mock)) {
             Step.setDependency(\.speechClient.authorizationStatus, { .denied })
             Step.action(.startMeeting)
                 .expectState(\.destination, .alert(.speechRecognitionDenied))
@@ -357,7 +357,7 @@ struct StandupDetailFeature: PreviewProvider, ComponentFeature {
                 }
         }
 
-        ComponentTest("speech authorized", stateName: "default") {
+        Test("speech authorized", stateName: "default") {
             Step.setDependency(\.speechClient.authorizationStatus, { .authorized })
             Step.action(.startMeeting)
                 .validateState("is recording") { state in
@@ -367,7 +367,7 @@ struct StandupDetailFeature: PreviewProvider, ComponentFeature {
         }
 
         let standup = Standup(id: .init(uuidString: "00000000-0000-0000-0000-000000000000")!)
-        ComponentTest("record transcript", state: .init(standup: standup)) {
+        Test("record transcript", state: .init(standup: standup)) {
             Step.setDependency(\.uuid, .incrementing)
             Step.setDependency(\.date, .constant(Date(timeIntervalSince1970: 1_234_567_890)))
             Step.action(.startMeeting)
@@ -389,7 +389,7 @@ struct StandupDetailFeature: PreviewProvider, ComponentFeature {
             standup.title = "Engineering"
             return standup
         }()
-        ComponentTest("edit", state: .init(standup: standup)) {
+        Test("edit", state: .init(standup: standup)) {
             Step.action(.edit)
                 .expectState(\.destination, .edit(.init(standup: standup)))
             Step.setBinding(\.destination, .edit(.init(standup: editedStandup)))

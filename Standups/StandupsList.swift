@@ -12,7 +12,6 @@ struct StandupsListModel: ComponentModel {
     @Dependency(\.mainQueue) var mainQueue
 
     struct State {
-        //TODO: sync updates from detail
         var standups: IdentifiedArrayOf<Standup> = []
         var destination: Destination?
     }
@@ -39,37 +38,37 @@ struct StandupsListModel: ComponentModel {
         case detail(StandupDetailModel.Output)
     }
 
-    func appear(model: Model) async {
+    func appear(store: Store) async {
         do {
-            model.standups = try JSONDecoder().decode(
+            store.standups = try JSONDecoder().decode(
                 IdentifiedArray.self,
                 from: self.dataManager.load(.standups)
             )
         } catch is DecodingError {
-            model.destination = .alert(.dataFailedToLoad)
+            store.destination = .alert(.dataFailedToLoad)
         } catch {
 
         }
 
-        model.statePublisher(\.standups)
+        store.statePublisher(\.standups)
             .dropFirst()
             .debounce(for: .seconds(1), scheduler: self.mainQueue)
             .sink { standups in
                 try? dataManager.save(JSONEncoder().encode(standups), .standups)
             }
-            .store(in: &model.cancellables)
+            .store(in: &store.cancellables)
     }
 
-    func handle(action: Action, model: Model) async {
+    func handle(action: Action, store: Store) async {
         switch action {
             case .addStandup:
-                model.destination = .add(.init(standup: Standup(id: Standup.ID(uuid()))))
+                store.destination = .add(.init(standup: Standup(id: Standup.ID(uuid()))))
             case .dismissAddStandup:
-                model.destination = nil
+                store.destination = nil
             case .confirmAddStandup:
-                defer { model.destination = nil }
+                defer { store.destination = nil }
 
-                guard case let .add(standupFormState) = model.destination
+                guard case let .add(standupFormState) = store.destination
                 else { return }
                 var standup = standupFormState.standup
 
@@ -79,14 +78,14 @@ struct StandupsListModel: ComponentModel {
                 if standup.attendees.isEmpty {
                     standup.attendees.append(Attendee(id: Attendee.ID(self.uuid())))
                 }
-                model.standups.append(standup)
+                store.standups.append(standup)
             case .standupTapped(let standup):
-                model.destination = .detail(.init(standup: standup))
+                store.destination = .detail(.init(standup: standup))
             case .alertButton(let action):
                 switch action {
                     case .confirmLoadMockData?:
                         withAnimation {
-                            model.standups = [
+                            store.standups = [
                                 .mock,
                                 .designMock,
                                 .engineeringMock,
@@ -98,16 +97,16 @@ struct StandupsListModel: ComponentModel {
         }
     }
 
-    func handle(input: Input, model: Model) async {
+    func handle(input: Input, store: Store) async {
         switch input {
             case .detail(.confirmDeletion(let standup)):
                 withAnimation {
-                    model.standups.remove(id: standup)
-                    model.destination = nil
+                    store.standups.remove(id: standup)
+                    store.destination = nil
                 }
             case .detail(.standupEdited(let standup)):
-                model.standups[id: standup.id] = standup
-                model.destination = nil
+                store.standups[id: standup.id] = standup
+                store.destination = nil
         }
     }
 }
@@ -225,25 +224,25 @@ extension URL {
     fileprivate static let standups = Self.documentsDirectory.appending(component: "standups.json")
 }
 
-struct StandupsListFeature: PreviewProvider, ComponentFeature {
+struct StandupsListComponent: PreviewProvider, Component {
 
     typealias Model = StandupsListModel
 
-    static func createView(model: ViewModel<StandupsListModel>) -> some View {
+    static func view(model: ViewModel<StandupsListModel>) -> some View {
         StandupsList(model: model)
     }
 
-    static var states: [ComponentState] {
-        ComponentState("list") {
+    static var states: States {
+        State("list") {
             .init(standups: [.mock, .designMock, .engineeringMock])
         }
-        ComponentState("deeplink") {
+        State("deeplink") {
             .init(standups: [.mock], destination: .detail(.init(destination: .edit(.init(standup: .mock)), standup: .mock)))
         }
     }
 
-    static var tests: [ComponentTest] {
-        ComponentTest("add", state: .init()) {
+    static var tests: Tests {
+        Test("add", state: .init()) {
             let mainQueue = DispatchQueue.test
             let savedData = LockIsolated(Data?.none)
             let standup = Standup(id: .init(uuidString: "00000000-0000-0000-0000-000000000000")!)
@@ -282,7 +281,7 @@ struct StandupsListFeature: PreviewProvider, ComponentFeature {
                 }
         }
 
-        ComponentTest("delete", state: .init(standups: [.mock, .designMock])) {
+        Test("delete", state: .init(standups: [.mock, .designMock])) {
             Step.action(.standupTapped(.designMock))
                 .expectState(\.destination, .detail(.init(standup: .designMock)))
             Step.input(.detail(.confirmDeletion(Standup.designMock.id)))
@@ -290,7 +289,7 @@ struct StandupsListFeature: PreviewProvider, ComponentFeature {
                 .expectState(\.standups, [.mock])
         }
 
-        ComponentTest("edit", state: .init(standups: [.mock, .designMock])) {
+        Test("edit", state: .init(standups: [.mock, .designMock])) {
             let editedStandup: Standup = {
                 var standup = Standup.designMock
                 standup.title = "Engineering"
@@ -303,14 +302,14 @@ struct StandupsListFeature: PreviewProvider, ComponentFeature {
                 .expectState(\.standups, [.mock, editedStandup])
         }
 
-        ComponentTest("load successful", state: .init()) {
+        Test("load successful", state: .init()) {
             Step.setDependency(\.dataManager.load, { _ in try JSONEncoder().encode([Standup.mock, .designMock])
             })
             Step.appear()
                 .expectState(\.standups, [.mock, .designMock])
         }
 
-        ComponentTest("load decoding failure", state: .init()) {
+        Test("load decoding failure", state: .init()) {
             Step.setDependency(\.dataManager, .mock(initialData: Data("bad data".utf8)))
             Step.appear()
                 .expectState(\.destination, .alert(.dataFailedToLoad))
@@ -319,7 +318,7 @@ struct StandupsListFeature: PreviewProvider, ComponentFeature {
             Step.setBinding(\.destination, nil)
         }
 
-        ComponentTest("load silent failure", state: .init()) {
+        Test("load silent failure", state: .init()) {
             Step.setDependency(\.dataManager.load, { _ in
                 struct FileNotFound: Error {}
                 throw FileNotFound()

@@ -63,7 +63,7 @@ struct RecordMeetingModel: ComponentModel {
 
     }
 
-    func appear(model: Model) async {
+    func appear(store: Store) async {
 
         self.soundEffectClient.load("ding.wav")
 
@@ -75,48 +75,48 @@ struct RecordMeetingModel: ComponentModel {
         await withTaskGroup(of: Void.self) { group in
             if authorization == .authorized {
                 group.addTask {
-                    await self.startSpeechRecognition(model: model)
+                    await self.startSpeechRecognition(model: store)
                 }
             }
             group.addTask {
-                await self.startTimer(model: model)
+                await self.startTimer(model: store)
             }
         }
     }
 
-    func handle(action: Action, model: Model) async {
+    func handle(action: Action, store: Store) async {
         switch action {
             case .nextSpeaker:
-                guard model.speakerIndex < model.standup.attendees.count - 1
+                guard store.speakerIndex < store.standup.attendees.count - 1
                 else {
-                    model.destination = .alert(.endMeeting(isDiscardable: false))
+                    store.destination = .alert(.endMeeting(isDiscardable: false))
                     return
                 }
 
                 self.soundEffectClient.play()
-                model.speakerIndex += 1
-                model.secondsElapsed = model.speakerIndex * Int(model.standup.durationPerAttendee.components.seconds)
+                store.speakerIndex += 1
+                store.secondsElapsed = store.speakerIndex * Int(store.standup.durationPerAttendee.components.seconds)
             case .endMeeting:
-                model.destination = .alert(.endMeeting(isDiscardable: true))
+                store.destination = .alert(.endMeeting(isDiscardable: true))
             case .alertButton(let action):
                 switch action {
                     case .confirmSave?:
-                        finishMeeting(model: model)
+                        finishMeeting(model: store)
                     case .confirmDiscard?:
-                        model.output(.dismiss)
+                        store.output(.dismiss)
                     case .none: break
                 }
-                model.destination = nil
+                store.destination = nil
             case .finishMeeting:
-                finishMeeting(model: model)
+                finishMeeting(model: store)
         }
     }
 
-    private func finishMeeting(model: Model) {
+    private func finishMeeting(model: Store) {
         model.output(.meetingFinished(transcript: model.transcript))
     }
 
-    private func startSpeechRecognition(model: Model) async {
+    private func startSpeechRecognition(model: Store) async {
         do {
             let speechTask = await self.speechClient.startTask(SFSpeechAudioBufferRecognitionRequest())
             for try await result in speechTask {
@@ -130,7 +130,7 @@ struct RecordMeetingModel: ComponentModel {
         }
     }
 
-    private func startTimer(model: Model) async {
+    private func startTimer(model: Store) async {
         for await _ in self.clock.timer(interval: .seconds(1)) where !model.state.isAlertOpen {
 
             model.secondsElapsed += 1
@@ -379,19 +379,19 @@ struct MeetingFooterView: View {
     }
 }
 
-struct RecordMeetingFeature: PreviewProvider, ComponentFeature {
+struct RecordMeetingComponent: PreviewProvider, Component {
 
     typealias Model = RecordMeetingModel
 
-    static func createView(model: ViewModel<RecordMeetingModel>) -> some View {
+    static func view(model: ViewModel<RecordMeetingModel>) -> some View {
         NavigationView { RecordMeetingView(model: model) }
     }
 
-    static var states: [ComponentState] {
-        ComponentState("default") {
+    static var states: States {
+        State("default") {
             .init(standup: .mock)
         }
-        ComponentState("quick") {
+        State("quick") {
             .init(standup: Standup(
                 id: Standup.ID(),
                 attendees: [
@@ -401,13 +401,13 @@ struct RecordMeetingFeature: PreviewProvider, ComponentFeature {
                 duration: .seconds(3)
             ))
         }
-        ComponentState("failed speech") {
+        State("failed speech") {
             .init(destination: .alert(.speechRecognizerFailed), standup: .mock)
         }
     }
 
-    static var tests: [ComponentTest] {
-        ComponentTest("timer", stateName: "quick") {
+    static var tests: Tests {
+        Test("timer", stateName: "quick") {
             let soundEffectPlayCount = LockIsolated(0)
             Step.setDependency(\.speechClient.authorizationStatus, { .denied })
             Step.setDependency(\.continuousClock, TestClock())
@@ -432,14 +432,14 @@ struct RecordMeetingFeature: PreviewProvider, ComponentFeature {
                 .expectOutput(.meetingFinished(transcript: ""))
         }
 
-        ComponentTest("record transcript", stateName: "default") {
+        Test("record transcript", stateName: "default") {
             Step.setDependency(\.speechClient, .string("hello"))
             Step.setDependency(\.continuousClock, ImmediateClock())
             Step.appear()
                 .expectOutput(.meetingFinished(transcript: "hello"))
         }
 
-        ComponentTest("end meeting save", stateName: "default") {
+        Test("end meeting save", stateName: "default") {
             Step.setDependency(\.speechClient.authorizationStatus, { .denied })
             Step.setDependency(\.continuousClock, TestClock())
             Step.appear(await: false)
@@ -457,7 +457,7 @@ struct RecordMeetingFeature: PreviewProvider, ComponentFeature {
                 .expectOutput(.meetingFinished(transcript: ""))
         }
 
-        ComponentTest("end meeting discard", stateName: "default") {
+        Test("end meeting discard", stateName: "default") {
             Step.action(.endMeeting)
                 .expectState {
                     $0.destination = .alert(.endMeeting(isDiscardable: true))
@@ -466,7 +466,7 @@ struct RecordMeetingFeature: PreviewProvider, ComponentFeature {
                 .expectOutput(.dismiss)
         }
 
-        ComponentTest("next speaker", stateName: "quick") {
+        Test("next speaker", stateName: "quick") {
             let soundEffectPlayCount = LockIsolated(0)
             Step.setDependency(\.speechClient, .string("hello"))
             Step.setDependency(\.continuousClock, TestClock())
@@ -502,7 +502,7 @@ struct RecordMeetingFeature: PreviewProvider, ComponentFeature {
                 .expectOutput(.meetingFinished(transcript: "hello"))
         }
 
-        ComponentTest("speech failure continue", stateName: "quick") {
+        Test("speech failure continue", stateName: "quick") {
             Step.setDependency(\.speechClient, .string("I completed the project", fail: true))
             Step.setDependency(\.continuousClock, TestClock())
             Step.appear(await: false)
@@ -516,7 +516,7 @@ struct RecordMeetingFeature: PreviewProvider, ComponentFeature {
                 .expectOutput(.meetingFinished(transcript: "I completed the project ❌"))
         }
 
-        ComponentTest("speech failure discard", stateName: "quick") {
+        Test("speech failure discard", stateName: "quick") {
             Step.setDependency(\.speechClient, .string("", fail: true))
             Step.setDependency(\.continuousClock, TestClock())
             Step.appear(await: false)

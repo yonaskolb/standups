@@ -27,8 +27,8 @@
 		CA350CCF2984518A00434F8A /* StandupsListUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA350CCE2984518A00434F8A /* StandupsListUITests.swift */; };
 		CA350CD2298452F300434F8A /* ding.wav in Resources */ = {isa = PBXBuildFile; fileRef = CA350CD1298452F300434F8A /* ding.wav */; };
 		CC498D222986B90000396AE0 /* Runtime in Frameworks */ = {isa = PBXBuildFile; productRef = CC498D212986B90000396AE0 /* Runtime */; };
-		CC5D01D2298533ED007889A8 /* Features.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5D01D1298533ED007889A8 /* Features.swift */; };
-		CC5D01D429853402007889A8 /* FeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5D01D329853402007889A8 /* FeatureTests.swift */; };
+		CC5D01D2298533ED007889A8 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5D01D1298533ED007889A8 /* Components.swift */; };
+		CC5D01D429853402007889A8 /* ComponentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5D01D329853402007889A8 /* ComponentTests.swift */; };
 		CC5D01D829853468007889A8 /* SwiftComponent in Frameworks */ = {isa = PBXBuildFile; productRef = CC5D01D729853468007889A8 /* SwiftComponent */; };
 		CC5D01E029853F03007889A8 /* Quick in Frameworks */ = {isa = PBXBuildFile; productRef = CC5D01DF29853F03007889A8 /* Quick */; };
 		CC5D01E22985644C007889A8 /* Runtime in Frameworks */ = {isa = PBXBuildFile; productRef = CC5D01E12985644C007889A8 /* Runtime */; };
@@ -72,8 +72,8 @@
 		CA350CCE2984518A00434F8A /* StandupsListUITests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StandupsListUITests.swift; sourceTree = "<group>"; };
 		CA350CD1298452F300434F8A /* ding.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = ding.wav; sourceTree = "<group>"; };
 		CC498D20298691CF00396AE0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		CC5D01D1298533ED007889A8 /* Features.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Features.swift; sourceTree = "<group>"; };
-		CC5D01D329853402007889A8 /* FeatureTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FeatureTests.swift; sourceTree = "<group>"; };
+		CC5D01D1298533ED007889A8 /* Components.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		CC5D01D329853402007889A8 /* ComponentTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComponentTests.swift; sourceTree = "<group>"; };
 		CC5D01D52985344C007889A8 /* SwiftComponent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = SwiftComponent; path = ../SwiftComponent; sourceTree = "<group>"; };
 		CC5D01E32986491C007889A8 /* TestSteps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TestSteps.swift; path = ../../../Documents/TestSteps.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -137,7 +137,7 @@
 			isa = PBXGroup;
 			children = (
 				CC498D20298691CF00396AE0 /* Info.plist */,
-				CC5D01D1298533ED007889A8 /* Features.swift */,
+				CC5D01D1298533ED007889A8 /* Components.swift */,
 				CA350CAB298450BF00434F8A /* Helpers.swift */,
 				CA350CAA298450BF00434F8A /* Models.swift */,
 				CA350CA2298450BF00434F8A /* RecordMeeting.swift */,
@@ -157,7 +157,7 @@
 		CA350C842984506F00434F8A /* StandupsTests */ = {
 			isa = PBXGroup;
 			children = (
-				CC5D01D329853402007889A8 /* FeatureTests.swift */,
+				CC5D01D329853402007889A8 /* ComponentTests.swift */,
 			);
 			path = StandupsTests;
 			sourceTree = "<group>";
@@ -357,7 +357,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CC5D01D2298533ED007889A8 /* Features.swift in Sources */,
+				CC5D01D2298533ED007889A8 /* Components.swift in Sources */,
 				CA350CB7298450BF00434F8A /* Models.swift in Sources */,
 				CA350CB4298450BF00434F8A /* OpenSettings.swift in Sources */,
 				CA350C752984506E00434F8A /* StandupsApp.swift in Sources */,
@@ -377,7 +377,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CC5D01D429853402007889A8 /* FeatureTests.swift in Sources */,
+				CC5D01D429853402007889A8 /* ComponentTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
