@@ -17,7 +17,7 @@ struct RecordMeetingModel: ComponentModel {
         var destination: Destination?
         var secondsElapsed = 0
         var speakerIndex = 0
-        fileprivate var transcript = ""
+        var transcript = ""
 
         var durationRemaining: Duration {
             standup.duration - .seconds(secondsElapsed)

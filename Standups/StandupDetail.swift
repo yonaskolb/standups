@@ -15,8 +15,8 @@ struct StandupDetailModel: ComponentModel {
     @Dependency(\.uuid) var uuid
 
     struct State {
-        var destination: Destination?
         var standup: Standup
+        var alert: AlertState<AlertAction>?
     }
 
     enum Action {
@@ -27,7 +27,6 @@ struct StandupDetailModel: ComponentModel {
         case tapMeeting(Meeting)
         case deleteMeetings(IndexSet)
         case alertButton(AlertAction?)
-
         case doneEditing(Standup)
     }
 
@@ -40,38 +39,49 @@ struct StandupDetailModel: ComponentModel {
         case standupEdited(Standup)
     }
 
-    enum Destination {
-        case alert(AlertState<AlertAction>)
-        case edit(StandupFormModel.State)
-        case meeting(Meeting)
-        case record(RecordMeetingModel.State)
+    enum Route {
+        case edit(ComponentRoute<StandupFormModel>)
+        case meeting(ComponentRoute<MeetingModel>)
+        case record(ComponentRoute<RecordMeetingModel>)
     }
+
     enum AlertAction {
         case confirmDeletion
         case continueWithoutRecording
         case openSettings
     }
 
+    func connect(route: Route, store: Store) -> Connection {
+        switch route {
+            case .record(let route):
+                return store.connect(route, output: Input.record)
+            case .edit(let route):
+                return store.connect(route)
+            case .meeting(let route):
+                return store.connect(route)
+        }
+    }
+
     func handle(action: Action, store: Store) async {
         switch action {
             case .delete:
-                store.destination = .alert(.deleteStandup)
+                store.alert = .deleteStandup
             case .edit:
-                store.destination = .edit(.init(standup: store.standup))
+                store.route(to: Route.edit, state: .init(standup: store.standup))
             case .cancel:
-                store.destination = nil
+                store.dismissRoute()
             case .tapMeeting(let meeting):
-                store.destination = .meeting(meeting)
+                store.route(to: Route.meeting, state: .init(meeting: meeting, standup: store.standup))
             case .deleteMeetings(let indices):
                 store.standup.meetings.remove(atOffsets: indices)
             case .startMeeting:
                 switch authorizationStatus() {
                     case .notDetermined, .authorized:
-                        store.destination = .record(.init(standup: store.standup))
+                        store.route(to: Route.record, state: .init(standup: store.standup))
                     case .denied:
-                        store.destination = .alert(.speechRecognitionDenied)
+                        store.alert = .speechRecognitionDenied
                     case .restricted:
-                        store.destination = .alert(.speechRecognitionRestricted)
+                        store.alert = .speechRecognitionRestricted
                     @unknown default:
                         break
                 }
@@ -80,7 +90,7 @@ struct StandupDetailModel: ComponentModel {
                     case .confirmDeletion?:
                         store.output(.confirmDeletion(store.standup.id))
                     case .continueWithoutRecording?:
-                        store.destination = .record(.init(standup: store.standup))
+                        store.route(to: Route.record, state: .init(standup: store.standup))
                     case .openSettings?:
                         await self.openSettings()
                     case nil:
@@ -88,7 +98,7 @@ struct StandupDetailModel: ComponentModel {
                 }
             case .doneEditing(let standup):
                 store.standup = standup
-                store.destination = nil
+                store.dismissRoute()
                 store.output(.standupEdited(standup))
         }
     }
@@ -106,10 +116,10 @@ struct StandupDetailModel: ComponentModel {
                         ),
                         at: 0
                     )
-                    store.destination = nil
+                    store.dismissRoute()
                 }
             case .record(.dismiss):
-                store.destination = nil
+                store.dismissRoute()
         }
     }
 }
@@ -117,6 +127,36 @@ struct StandupDetailModel: ComponentModel {
 struct StandupDetailView: ComponentView {
 
     @ObservedObject var model: ViewModel<StandupDetailModel>
+
+    func presentation(for route: StandupDetailModel.Route) -> Presentation {
+        switch route {
+            case .edit: return .sheet
+            case .meeting: return .push
+            case .record: return .push
+        }
+    }
+
+    func routeView(_ route: StandupDetailModel.Route) -> some View {
+        switch route {
+            case .edit(let route):
+                NavigationView {
+                    StandupFormView(model: route.viewModel)
+                        .navigationTitle(model.standup.title)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                model.button(.cancel, "Cancel")
+                            }
+                            ToolbarItem(placement: .confirmationAction) {
+                                model.button(.doneEditing(route.viewModel.state.standup), "Done")
+                            }
+                        }
+                }
+            case .record(let route):
+                RecordMeetingView(model: route.viewModel)
+            case .meeting(let route):
+                MeetingView(model: route.viewModel)
+        }
+    }
 
     var view: some View {
         List {
@@ -174,48 +214,16 @@ struct StandupDetailView: ComponentView {
 
             Section {
                 model.button(.delete, "Delete")
-                .foregroundColor(.red)
-                .frame(maxWidth: .infinity)
+                    .foregroundColor(.red)
+                    .frame(maxWidth: .infinity)
             }
         }
         .navigationTitle(model.standup.title)
         .toolbar {
             model.button(.edit, "Edit")
         }
-        .navigationDestination(
-            unwrapping: model.binding(\.destination),
-            case: /StandupDetailModel.Destination.meeting
-        ) { $meeting in
-            MeetingView(meeting: meeting, standup: model.standup)
-        }
-        .navigationDestination(
-            unwrapping: model.binding(\.destination),
-            case: /StandupDetailModel.Destination.record
-        ) { $state in
-            RecordMeetingView(model: model.scope(state: state, output: Model.Input.record))
-        }
-        .alert(
-            unwrapping: model.binding(\.destination),
-            case: /StandupDetailModel.Destination.alert
-        ) { action in
+        .alert(unwrapping: model.binding(\.alert)) { action in
             model.send(.alertButton(action))
-        }
-        .sheet(
-            unwrapping: model.binding(\.destination),
-            case: /StandupDetailModel.Destination.edit
-        ) { $state in
-            NavigationStack {
-                StandupFormView(model: model.scope(state: state))
-                    .navigationTitle(model.standup.title)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            model.button(.cancel, "Cancel")
-                        }
-                        ToolbarItem(placement: .confirmationAction) {
-                            model.button(.doneEditing(state.standup), "Done")
-                        }
-                    }
-            }
         }
     }
 }
@@ -270,31 +278,6 @@ extension AlertState where Action == StandupDetailModel.AlertAction {
     }
 }
 
-struct MeetingView: View {
-    let meeting: Meeting
-    let standup: Standup
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading) {
-                Divider()
-                    .padding(.bottom)
-                Text("Attendees")
-                    .font(.headline)
-                ForEach(self.standup.attendees) { attendee in
-                    Text(attendee.name)
-                }
-                Text("Transcript")
-                    .font(.headline)
-                    .padding(.top)
-                Text(self.meeting.transcript)
-            }
-        }
-        .navigationTitle(Text(self.meeting.date, style: .date))
-        .padding()
-    }
-}
-
 struct StandupDetailComponent: PreviewProvider, Component {
 
     typealias Model = StandupDetailModel
@@ -310,10 +293,10 @@ struct StandupDetailComponent: PreviewProvider, Component {
             .init(standup: .mock)
         }
         State("speech denied") {
-            .init(destination: .alert(.speechRecognitionDenied), standup: .mock)
+            .init(standup: .mock, alert: .speechRecognitionDenied)
         }
         State("speech restricted") {
-            .init(destination: .alert(.speechRecognitionRestricted), standup: .mock)
+            .init(standup: .mock, alert: .speechRecognitionRestricted)
         }
     }
 
@@ -321,24 +304,24 @@ struct StandupDetailComponent: PreviewProvider, Component {
         Test("speech restricted", stateName: "default") {
             Step.setDependency(\.speechClient.authorizationStatus, { .restricted })
             Step.action(.startMeeting)
-                .expectState(\.destination, .alert(.speechRecognitionRestricted))
-            Step.setBinding(\.destination, nil)
+                .expectState(\.alert, .speechRecognitionRestricted)
+            Step.setBinding(\.alert, .none)
         }
 
         Test("speech denied", stateName: "default") {
             Step.setDependency(\.speechClient.authorizationStatus, { .denied })
             Step.action(.startMeeting)
-                .expectState(\.destination, .alert(.speechRecognitionDenied))
-            Step.setBinding(\.destination, nil)
+                .expectState(\.alert, .speechRecognitionDenied)
+            Step.setBinding(\.alert, .none)
         }
 
         Test("open settings", stateName: "default") {
             Step.setDependency(\.speechClient.authorizationStatus, { .denied })
             Step.action(.startMeeting)
-                .expectState(\.destination, .alert(.speechRecognitionDenied))
+                .expectState(\.alert, .speechRecognitionDenied)
             let settingsOpened = LockIsolated(false)
             Step.setDependency(\.openSettings, { settingsOpened.setValue(true) })
-            Step.setBinding(\.destination, nil)
+            Step.setBinding(\.alert, .none)
             Step.action(.alertButton(.openSettings))
                 .validateState("settings opened") { _ in
                     settingsOpened.value == true
@@ -348,31 +331,32 @@ struct StandupDetailComponent: PreviewProvider, Component {
         Test("continue without recording", state: .init(standup: .mock)) {
             Step.setDependency(\.speechClient.authorizationStatus, { .denied })
             Step.action(.startMeeting)
-                .expectState(\.destination, .alert(.speechRecognitionDenied))
-            Step.setBinding(\.destination, nil)
+                .expectState(\.alert, .speechRecognitionDenied)
+            Step.setBinding(\.alert, .none)
             Step.action(.alertButton(.continueWithoutRecording))
-                .validateState("is recording") { state in
-                    guard case let .record(state) = state.destination else { return false}
-                    return state.standup == .mock
-                }
+                .expectRoute(/Model.Route.record, state: .init(standup: .mock))
         }
 
         Test("speech authorized", stateName: "default") {
             Step.setDependency(\.speechClient.authorizationStatus, { .authorized })
             Step.action(.startMeeting)
-                .validateState("is recording") { state in
-                    guard case let .record(model) = state.destination else { return false}
-                    return model.standup == .mock
-                }
+                .expectRoute(/Model.Route.record, state: .init(standup: .mock))
         }
 
         let standup = Standup(id: .init(uuidString: "00000000-0000-0000-0000-000000000000")!)
         Test("record transcript", state: .init(standup: standup)) {
+            Step.setDependency(\.continuousClock, TestClock())
             Step.setDependency(\.uuid, .incrementing)
             Step.setDependency(\.date, .constant(Date(timeIntervalSince1970: 1_234_567_890)))
             Step.action(.startMeeting)
-                .expectState(\.destination, .record(.init(standup: standup)))
-            Step.input(.record(.meetingFinished(transcript: "Hello")))
+                .expectRoute(/Model.Route.record, state: .init(standup: standup))
+            Step.route(/Model.Route.record) {
+                TestStep<RecordMeetingModel>.setBinding(\.transcript, "Hello")
+                TestStep<RecordMeetingModel>.action(.endMeeting)
+                TestStep<RecordMeetingModel>.action(.alertButton(.confirmSave))
+            }
+            // Step.input(.record(.meetingFinished(transcript: "Hello")))
+            Step.advanceClock()
                 .expectState {
                     $0.standup.meetings = [
                         Meeting(
@@ -391,11 +375,14 @@ struct StandupDetailComponent: PreviewProvider, Component {
         }()
         Test("edit", state: .init(standup: standup)) {
             Step.action(.edit)
-                .expectState(\.destination, .edit(.init(standup: standup)))
-            Step.setBinding(\.destination, .edit(.init(standup: editedStandup)))
+                .expectRoute(/Model.Route.edit, state: .init(standup: standup))
+            Step.route(/Model.Route.edit) {
+                TestStep<StandupFormModel>.setBinding(\.standup.title, editedStandup.title)
+            }
             Step.action(.doneEditing(editedStandup))
                 .expectState(\.standup, editedStandup)
                 .expectOutput(.standupEdited(editedStandup))
+                .expectState(\.standup, editedStandup)
         }
     }
 

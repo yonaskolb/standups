@@ -43,15 +43,17 @@ struct StandupsApp: App {
             } else if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
                 // Unit test
                 EmptyView()
-            } else if ProcessInfo.processInfo.arguments.contains("feature-list") {
-                // feature list
+            } else if ProcessInfo.processInfo.arguments.contains("component-list") {
+                // component list
                 withDependencies {
                     $0.context = .preview
                 } operation: {
                     ComponentListView(components: components)
                 }
             } else {
-                StandupsList(model: .init(state: .init()))
+                NavigationView {
+                    StandupsList(model: .init(state: .init()))
+                }
             }
         }
     }
@@ -65,7 +67,80 @@ struct UITestingView: View {
         withDependencies {
             $0.dataManager = .mock()
         } operation: {
-            StandupsList(model: .init(state: .init()))
+            NavigationView {
+                StandupsList(model: .init(state: .init()))
+            }
+        }
+    }
+}
+
+struct AppComponents_Previews: PreviewProvider {
+    static var previews: some View {
+        ComponentListView(components: components)
+    }
+}
+
+struct AppComponent: PreviewProvider, Component {
+    typealias Model = StandupsListModel
+
+    static func view(model: ViewModel<Model>) -> some View {
+        NavigationView {
+            StandupsList(model: model)
+        }
+    }
+
+    static var states: States {
+        State("app") {
+            .init()
+        }
+        State(
+            "deeplink",
+            route: .detail(
+                .init(
+                    state: .init(standup: .mock),
+                    route: .record(
+                        .init(
+                            state: .init(standup: .mock)
+                        )
+                    )
+                )
+            )
+        ) {
+            .init(standups: [.mock])
+        }
+    }
+
+    static var tests: Tests {
+        let standup = Standup(id: "0")
+
+        Test("app walkthrough", state: .init()) {
+            Step.setDependency(\.uuid, .incrementing)
+            Step.setDependency(\.dataManager.load, { _ in try! JSONEncoder().encode([] as [Standup]) })
+            Step.appear()
+            Step.action(.addStandup)
+                .expectRoute(/Model.Route.add, state: .init(standup: standup))
+            Step.route(/Model.Route.add) {
+                TestStep<StandupFormModel>.setBinding(\.standup.title, "Engineering")
+            }
+            let createdStandup = Standup(id: "0", title: "Engineering")
+            Step.action(.confirmAddStandup(createdStandup))
+            Step.action(.standupTapped(createdStandup))
+                .expectRoute(/Model.Route.detail, state: .init(standup: createdStandup))
+            Step.route(/Model.Route.detail) {
+                TestStep<StandupDetailModel>.action(.edit)
+                TestStep<StandupDetailModel>.route(/StandupDetailModel.Route.edit) {
+                    TestStep<StandupFormModel>.setBinding(\.standup.theme, .buttercup)
+                }
+                let editedStandup = Standup(id: "0", theme: .buttercup, title: "Engineering")
+                TestStep<StandupDetailModel>.action(.doneEditing(editedStandup))
+                TestStep<StandupDetailModel>.action(.startMeeting)
+                TestStep<StandupDetailModel>.route(/StandupDetailModel.Route.record) {
+                    TestStep<RecordMeetingModel>.appear(await: false)
+                    TestStep<RecordMeetingModel>.setBinding(\.transcript, "Hello")
+                    TestStep<RecordMeetingModel>.action(.endMeeting)
+                    TestStep<RecordMeetingModel>.action(.alertButton(.confirmSave))
+                }
+            }
         }
     }
 }

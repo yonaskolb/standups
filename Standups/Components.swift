@@ -7,6 +7,7 @@ import SwiftUI
 public let components: [any Component.Type] = [
     StandupsListComponent.self,
     StandupDetailComponent.self,
+    MeetingComponent.self,
     StandupFormComponent.self,
     RecordMeetingComponent.self,
 ]
