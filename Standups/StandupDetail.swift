@@ -302,26 +302,26 @@ struct StandupDetailComponent: PreviewProvider, Component {
 
     static var tests: Tests {
         Test("speech restricted", stateName: "default") {
-            Step.setDependency(\.speechClient.authorizationStatus, { .restricted })
+            Step.dependency(\.speechClient.authorizationStatus, { .restricted })
             Step.action(.startMeeting)
                 .expectState(\.alert, .speechRecognitionRestricted)
-            Step.setBinding(\.alert, .none)
+            Step.binding(\.alert, .none)
         }
 
         Test("speech denied", stateName: "default") {
-            Step.setDependency(\.speechClient.authorizationStatus, { .denied })
+            Step.dependency(\.speechClient.authorizationStatus, { .denied })
             Step.action(.startMeeting)
                 .expectState(\.alert, .speechRecognitionDenied)
-            Step.setBinding(\.alert, .none)
+            Step.binding(\.alert, .none)
         }
 
         Test("open settings", stateName: "default") {
-            Step.setDependency(\.speechClient.authorizationStatus, { .denied })
+            Step.dependency(\.speechClient.authorizationStatus, { .denied })
             Step.action(.startMeeting)
                 .expectState(\.alert, .speechRecognitionDenied)
             let settingsOpened = LockIsolated(false)
-            Step.setDependency(\.openSettings, { settingsOpened.setValue(true) })
-            Step.setBinding(\.alert, .none)
+            Step.dependency(\.openSettings, { settingsOpened.setValue(true) })
+            Step.binding(\.alert, .none)
             Step.action(.alertButton(.openSettings))
                 .validateState("settings opened") { _ in
                     settingsOpened.value == true
@@ -329,29 +329,29 @@ struct StandupDetailComponent: PreviewProvider, Component {
         }
 
         Test("continue without recording", state: .init(standup: .mock)) {
-            Step.setDependency(\.speechClient.authorizationStatus, { .denied })
+            Step.dependency(\.speechClient.authorizationStatus, { .denied })
             Step.action(.startMeeting)
                 .expectState(\.alert, .speechRecognitionDenied)
-            Step.setBinding(\.alert, .none)
+            Step.binding(\.alert, .none)
             Step.action(.alertButton(.continueWithoutRecording))
                 .expectRoute(/Model.Route.record, state: .init(standup: .mock))
         }
 
         Test("speech authorized", stateName: "default") {
-            Step.setDependency(\.speechClient.authorizationStatus, { .authorized })
+            Step.dependency(\.speechClient.authorizationStatus, { .authorized })
             Step.action(.startMeeting)
                 .expectRoute(/Model.Route.record, state: .init(standup: .mock))
         }
 
         let standup = Standup(id: .init(uuidString: "00000000-0000-0000-0000-000000000000")!)
         Test("record transcript", state: .init(standup: standup)) {
-            Step.setDependency(\.continuousClock, TestClock())
-            Step.setDependency(\.uuid, .incrementing)
-            Step.setDependency(\.date, .constant(Date(timeIntervalSince1970: 1_234_567_890)))
+            Step.dependency(\.continuousClock, TestClock())
+            Step.dependency(\.uuid, .incrementing)
+            Step.dependency(\.date, .constant(Date(timeIntervalSince1970: 1_234_567_890)))
             Step.action(.startMeeting)
                 .expectRoute(/Model.Route.record, state: .init(standup: standup))
             Step.route(/Model.Route.record) {
-                TestStep<RecordMeetingModel>.setBinding(\.transcript, "Hello")
+                TestStep<RecordMeetingModel>.binding(\.transcript, "Hello")
                 TestStep<RecordMeetingModel>.action(.endMeeting)
                 TestStep<RecordMeetingModel>.action(.alertButton(.confirmSave))
             }
@@ -377,7 +377,7 @@ struct StandupDetailComponent: PreviewProvider, Component {
             Step.action(.edit)
                 .expectRoute(/Model.Route.edit, state: .init(standup: standup))
             Step.route(/Model.Route.edit) {
-                TestStep<StandupFormModel>.setBinding(\.standup.title, editedStandup.title)
+                TestStep<StandupFormModel>.binding(\.standup.title, editedStandup.title)
             }
             Step.action(.doneEditing(editedStandup))
                 .expectState(\.standup, editedStandup)

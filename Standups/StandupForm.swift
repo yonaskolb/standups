@@ -130,18 +130,18 @@ struct StandupFormComponent: PreviewProvider, Component {
 
     static var tests: Tests {
         Test("fill", state: .init(standup: .init(id: .init()))) {
-            Step.setDependency(\.uuid, .incrementing)
+            Step.dependency(\.uuid, .incrementing)
             Step.appear()
-            Step.setBinding(\.standup.title, "Engineering")
-            Step.setBinding(\.standup.duration, .seconds(20))
-            Step.setBinding(\.standup.theme, .navy)
-            Step.setBinding(\.focus, .attendee(.init(uuidString: "00000000-0000-0000-0000-000000000000")!))
-            Step.setBinding(\.standup.attendees[id: .init(uuidString: "00000000-0000-0000-0000-000000000000")!]!.name, "Tahmina")
+            Step.binding(\.standup.title, "Engineering")
+            Step.binding(\.standup.duration, .seconds(20))
+            Step.binding(\.standup.theme, .navy)
+            Step.binding(\.focus, .attendee(.init(uuidString: "00000000-0000-0000-0000-000000000000")!))
+            Step.binding(\.standup.attendees[id: .init(uuidString: "00000000-0000-0000-0000-000000000000")!]!.name, "Tahmina")
             Step.action(.addAttendee)
-            Step.setBinding(\.standup.attendees[id: .init(uuidString: "00000000-0000-0000-0000-000000000001")!]!.name, "Sarah")
+            Step.binding(\.standup.attendees[id: .init(uuidString: "00000000-0000-0000-0000-000000000001")!]!.name, "Sarah")
         }
         Test("add attendee", state: .init(standup: .init(id: .init(), title: "Engineering"))) {
-            Step.setDependency(\.uuid, .incrementing)
+            Step.dependency(\.uuid, .incrementing)
             Step.appear()
                 .expectState {
                     $0.standup.attendees = [Attendee(id: "0")]
@@ -167,7 +167,7 @@ struct StandupFormComponent: PreviewProvider, Component {
             ],
             title: "Engineering"
         ))) {
-            Step.setDependency(\.uuid, uuid)
+            Step.dependency(\.uuid, uuid)
             Step.appear()
             Step.action(.deleteAttendees([0]))
                 .expectState {

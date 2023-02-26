@@ -259,13 +259,13 @@ struct StandupsListComponent: PreviewProvider, Component {
                 standup.attendees.append(Attendee(id: Attendee.ID(), name: "   "))
                 return standup
             }()
-            Step.setDependency(\.mainQueue, mainQueue.eraseToAnyScheduler())
-            Step.setDependency(\.uuid, .incrementing)
-            Step.setDependency(\.dataManager.load, { _ in
+            Step.dependency(\.mainQueue, mainQueue.eraseToAnyScheduler())
+            Step.dependency(\.uuid, .incrementing)
+            Step.dependency(\.dataManager.load, { _ in
                 struct FileNotFound: Error {}
                 throw FileNotFound()
             })
-            Step.setDependency(\.dataManager.save, { data, _ in
+            Step.dependency(\.dataManager.save, { data, _ in
                 savedData.setValue(data)
             })
             Step.appear()
@@ -307,23 +307,23 @@ struct StandupsListComponent: PreviewProvider, Component {
         }
 
         Test("load successful", state: .init()) {
-            Step.setDependency(\.dataManager.load) { _ in try JSONEncoder().encode([Standup.mock, .designMock])
+            Step.dependency(\.dataManager.load) { _ in try JSONEncoder().encode([Standup.mock, .designMock])
             }
             Step.appear()
                 .expectState(\.standups, [.mock, .designMock])
         }
 
         Test("load decoding failure", state: .init()) {
-            Step.setDependency(\.dataManager, .mock(initialData: Data("bad data".utf8)))
+            Step.dependency(\.dataManager, .mock(initialData: Data("bad data".utf8)))
             Step.appear()
                 .expectState(\.alert, .dataFailedToLoad)
             Step.action(.alertButton(.confirmLoadMockData))
                 .expectState(\.standups, [.mock, .designMock, .engineeringMock])
-            Step.setBinding(\.alert, nil)
+            Step.binding(\.alert, nil)
         }
 
         Test("load silent failure", state: .init()) {
-            Step.setDependency(\.dataManager.load, { _ in
+            Step.dependency(\.dataManager.load, { _ in
                 struct FileNotFound: Error {}
                 throw FileNotFound()
             })
