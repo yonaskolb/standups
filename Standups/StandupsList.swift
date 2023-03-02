@@ -240,6 +240,26 @@ struct StandupsListComponent: PreviewProvider, Component {
         State("list") {
             .init(standups: [.mock, .designMock, .engineeringMock])
         }
+
+        State("empty") {
+            .init(standups: [])
+        }
+
+        State(
+            "deeplink",
+            route: .detail(
+                .init(
+                    state: .init(standup: .mock),
+                    route: .record(
+                        .init(
+                            state: .init(standup: .mock)
+                        )
+                    )
+                )
+            )
+        ) {
+            .init(standups: [.mock])
+        }
     }
 
     static var tests: Tests {
@@ -281,7 +301,7 @@ struct StandupsListComponent: PreviewProvider, Component {
                 }
         }
 
-        Test("delete", state: .init(standups: [.mock, .designMock])) {
+        Test("delete", state: .init(standups: .init(uniqueElements: [Standup.mock, Standup.designMock]))) {
             Step.action(.standupTapped(.designMock))
                 .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
             Step.route(/Model.Route.detail) {
@@ -293,7 +313,7 @@ struct StandupsListComponent: PreviewProvider, Component {
             .expectState(\.standups, [.mock])
         }
 
-        Test("edit", state: .init(standups: [.mock, .designMock])) {
+        Test("edit", state: .init(standups: .init(uniqueElements: [Standup.mock, Standup.designMock]))) {
             let editedStandup: Standup = {
                 var standup = Standup.designMock
                 standup.title = "Engineering"
