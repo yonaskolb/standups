@@ -17,7 +17,7 @@ final class ComponentTests: QuickSpec {
             for test in component.tests {
                 it(test.name, file: test.source.file, line: test.source.line) {
                     let result = await ComponentType.run(test)
-                    print("\tComponent \(component.Model.baseName): \(test.name)")
+                    print("\t\(component.Model.baseName): \(test.name)")
                     for step in result.steps {
                         self.testStep(step)
                     }
@@ -27,9 +27,17 @@ final class ComponentTests: QuickSpec {
     }
 
     func testStep(_ step: TestStepResult, parent: String? = nil) {
-        print("\t\tStep \(step.description)")
+        var printMessage = "\t\tStep \(step.description)"
+        if parent != nil {
+            printMessage = "\t\(printMessage)"
+        }
+        print(printMessage)
         if !step.expectations.isEmpty {
-            print("\t\t\t\(step.expectations.joined(separator: "\n\t\t\t"))")
+            var prefix = "\t\t\t"
+            if parent != nil {
+                prefix += "\t"
+            }
+            print("\(prefix)\(step.expectations.joined(separator: "\n\(prefix)"))")
         }
         for error in step.errors {
             var message = "\n\n"
