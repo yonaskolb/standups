@@ -37,9 +37,10 @@ struct MainComponent: PreviewProvider, Component {
 
     static var tests: Tests {
 
-        Test("app walkthrough", state: .init()) {
+        Test("app walkthrough", state: .init(), assertions: []) {
             let standup = Standup(id: "0")
-            Step.dependency(\.dataManager.load, { _ in try! JSONEncoder().encode([] as [Standup]) })
+            Step.dependency(\.dataManager, .mockStandups([]))
+            Step.dependency(\.uuid, .incrementing)
             Step.scope(Model.standups) {
                 TestStep<StandupsListModel>.appear()
                 TestStep<StandupsListModel>.action(.addStandup)

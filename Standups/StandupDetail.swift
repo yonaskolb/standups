@@ -35,7 +35,7 @@ struct StandupDetailModel: ComponentModel {
     }
 
     enum Output {
-        case confirmDeletion(Standup.ID)
+        case standupDeleted(Standup.ID)
         case standupEdited(Standup)
     }
 
@@ -86,9 +86,10 @@ struct StandupDetailModel: ComponentModel {
                         break
                 }
             case .alertButton(let action):
+                store.alert = nil
                 switch action {
                     case .confirmDeletion?:
-                        store.output(.confirmDeletion(store.standup.id))
+                        store.output(.standupDeleted(store.standup.id))
                     case .continueWithoutRecording?:
                         store.route(to: Route.record, state: .init(standup: store.standup))
                     case .openSettings?:
@@ -343,7 +344,7 @@ struct StandupDetailComponent: PreviewProvider, Component {
                 .expectRoute(/Model.Route.record, state: .init(standup: .mock))
         }
 
-        let standup = Standup(id: .init(uuidString: "00000000-0000-0000-0000-000000000000")!)
+        let standup = Standup(id: "0")
         Test("record transcript", state: .init(standup: standup)) {
             Step.dependency(\.continuousClock, TestClock())
             Step.dependency(\.uuid, .incrementing)
@@ -354,13 +355,14 @@ struct StandupDetailComponent: PreviewProvider, Component {
                 TestStep<RecordMeetingModel>.binding(\.transcript, "Hello")
                 TestStep<RecordMeetingModel>.action(.endMeeting)
                 TestStep<RecordMeetingModel>.action(.alertButton(.confirmSave))
+                    .expectOutput(.meetingFinished(transcript: "Hello"))
             }
             // Step.input(.record(.meetingFinished(transcript: "Hello")))
             Step.advanceClock()
                 .expectState {
                     $0.standup.meetings = [
                         Meeting(
-                            id: Meeting.ID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+                            id: "0",
                             date: Date(timeIntervalSince1970: 1_234_567_890),
                             transcript: "Hello"
                         )

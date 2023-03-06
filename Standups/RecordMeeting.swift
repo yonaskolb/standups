@@ -444,9 +444,7 @@ struct RecordMeetingComponent: PreviewProvider, Component {
             Step.dependency(\.continuousClock, TestClock())
             Step.appear(await: false)
             Step.action(.endMeeting)
-                .expectState {
-                    $0.destination = .alert(.endMeeting(isDiscardable: true))
-                }
+                .expectState(\.destination, .alert(.endMeeting(isDiscardable: true)))
             Step.advanceClock(.seconds(10))
                 .expectState {
                     // has paused
@@ -459,9 +457,7 @@ struct RecordMeetingComponent: PreviewProvider, Component {
 
         Test("end meeting discard", stateName: "default") {
             Step.action(.endMeeting)
-                .expectState {
-                    $0.destination = .alert(.endMeeting(isDiscardable: true))
-                }
+                .expectState(\.destination, .alert(.endMeeting(isDiscardable: true)))
             Step.action(.alertButton(.confirmDiscard))
                 .expectOutput(.dismiss)
         }

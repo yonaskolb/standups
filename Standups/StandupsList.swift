@@ -102,7 +102,7 @@ struct StandupsListModel: ComponentModel {
 
     func handle(input: Input, store: Store) async {
         switch input {
-            case .detail(.confirmDeletion(let standup)):
+            case .detail(.standupDeleted(let standup)):
                 withAnimation {
                     store.standups.remove(id: standup)
                     store.dismissRoute()
@@ -265,8 +265,8 @@ struct StandupsListComponent: PreviewProvider, Component {
     static var tests: Tests {
         Test("add", state: .init()) {
             let mainQueue = DispatchQueue.test
-            let savedData = LockIsolated(Data?.none)
-            let standup = Standup(id: .init(uuidString: "00000000-0000-0000-0000-000000000000")!)
+            let standups = LockIsolated<[Standup]>([])
+            let standup = Standup(id: "0")
             let addedStandup: Standup = {
                 var standup = standup
                 standup.title = "Engineering"
@@ -281,13 +281,7 @@ struct StandupsListComponent: PreviewProvider, Component {
             }()
             Step.dependency(\.mainQueue, mainQueue.eraseToAnyScheduler())
             Step.dependency(\.uuid, .incrementing)
-            Step.dependency(\.dataManager.load, { _ in
-                struct FileNotFound: Error {}
-                throw FileNotFound()
-            })
-            Step.dependency(\.dataManager.save, { data, _ in
-                savedData.setValue(data)
-            })
+            Step.dependency(\.dataManager, .mockStandups(standups))
             Step.appear()
             Step.action(.addStandup)
                 .expectRoute(/Model.Route.add, state: .init(standup: standup))
@@ -296,8 +290,7 @@ struct StandupsListComponent: PreviewProvider, Component {
                 .expectState(\.standups, [addedStandup])
             Step.run("run main") { await mainQueue.run() }
                 .validateState("saved standup") {
-                    guard let data = savedData.value else { return false }
-                    return try! $0.standups == JSONDecoder().decode(IdentifiedArrayOf<Standup>.self, from: data)
+                    standups.value == $0.standups.elements
                 }
         }
 
@@ -307,8 +300,8 @@ struct StandupsListComponent: PreviewProvider, Component {
             Step.route(/Model.Route.detail) {
                 TestStep<StandupDetailModel>.action(.delete)
                 TestStep<StandupDetailModel>.action(.alertButton(.confirmDeletion))
+                    .expectOutput(.standupDeleted(Standup.designMock.id))
             }
-            //            Step.input(.detail(.confirmDeletion(Standup.designMock.id)))
             .expectEmptyRoute()
             .expectState(\.standups, [.mock])
         }

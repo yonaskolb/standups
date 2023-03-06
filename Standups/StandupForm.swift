@@ -135,10 +135,10 @@ struct StandupFormComponent: PreviewProvider, Component {
             Step.binding(\.standup.title, "Engineering")
             Step.binding(\.standup.duration, .seconds(20))
             Step.binding(\.standup.theme, .navy)
-            Step.binding(\.focus, .attendee(.init(uuidString: "00000000-0000-0000-0000-000000000000")!))
-            Step.binding(\.standup.attendees[id: .init(uuidString: "00000000-0000-0000-0000-000000000000")!]!.name, "Tahmina")
+            Step.binding(\.focus, .attendee("0"))
+            Step.binding(\.standup.attendees[id: "0"]!.name, "Tahmina")
             Step.action(.addAttendee)
-            Step.binding(\.standup.attendees[id: .init(uuidString: "00000000-0000-0000-0000-000000000001")!]!.name, "Sarah")
+            Step.binding(\.standup.attendees[id: "1"]!.name, "Sarah")
         }
         Test("add attendee", state: .init(standup: .init(id: .init(), title: "Engineering"))) {
             Step.dependency(\.uuid, .incrementing)
