@@ -352,9 +352,9 @@ struct StandupDetailComponent: PreviewProvider, Component {
             Step.action(.startMeeting)
                 .expectRoute(/Model.Route.record, state: .init(standup: standup))
             Step.route(/Model.Route.record) {
-                TestStep<RecordMeetingModel>.binding(\.transcript, "Hello")
-                TestStep<RecordMeetingModel>.action(.endMeeting)
-                TestStep<RecordMeetingModel>.action(.alertButton(.confirmSave))
+                $0.binding(\.transcript, "Hello")
+                $0.action(.endMeeting)
+                $0.action(.alertButton(.confirmSave))
                     .expectOutput(.meetingFinished(transcript: "Hello"))
             }
             // Step.input(.record(.meetingFinished(transcript: "Hello")))
@@ -379,7 +379,7 @@ struct StandupDetailComponent: PreviewProvider, Component {
             Step.action(.edit)
                 .expectRoute(/Model.Route.edit, state: .init(standup: standup))
             Step.route(/Model.Route.edit) {
-                TestStep<StandupFormModel>.binding(\.standup.title, editedStandup.title)
+                $0.binding(\.standup.title, editedStandup.title)
             }
             Step.action(.doneEditing(editedStandup))
                 .expectState(\.standup, editedStandup)
