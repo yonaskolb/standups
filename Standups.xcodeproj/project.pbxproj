@@ -28,7 +28,7 @@
 		CA350CD2298452F300434F8A /* ding.wav in Resources */ = {isa = PBXBuildFile; fileRef = CA350CD1298452F300434F8A /* ding.wav */; };
 		CC37D095299B508A0055C239 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC37D094299B508A0055C239 /* Main.swift */; };
 		CC498D222986B90000396AE0 /* Runtime in Frameworks */ = {isa = PBXBuildFile; productRef = CC498D212986B90000396AE0 /* Runtime */; };
-		CC5D01D2298533ED007889A8 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5D01D1298533ED007889A8 /* Components.swift */; };
+		CC5D01D2298533ED007889A8 /* ComponentList.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5D01D1298533ED007889A8 /* ComponentList.swift */; };
 		CC5D01D429853402007889A8 /* ComponentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5D01D329853402007889A8 /* ComponentTests.swift */; };
 		CC5D01D829853468007889A8 /* SwiftComponent in Frameworks */ = {isa = PBXBuildFile; productRef = CC5D01D729853468007889A8 /* SwiftComponent */; };
 		CC5D01E029853F03007889A8 /* Quick in Frameworks */ = {isa = PBXBuildFile; productRef = CC5D01DF29853F03007889A8 /* Quick */; };
@@ -76,7 +76,7 @@
 		CA350CD1298452F300434F8A /* ding.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = ding.wav; sourceTree = "<group>"; };
 		CC37D094299B508A0055C239 /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Main.swift; sourceTree = "<group>"; };
 		CC498D20298691CF00396AE0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		CC5D01D1298533ED007889A8 /* Components.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		CC5D01D1298533ED007889A8 /* ComponentList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComponentList.swift; sourceTree = "<group>"; };
 		CC5D01D329853402007889A8 /* ComponentTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComponentTests.swift; sourceTree = "<group>"; };
 		CC5D01D52985344C007889A8 /* SwiftComponent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = SwiftComponent; path = ../SwiftComponent; sourceTree = "<group>"; };
 		CC5D01E32986491C007889A8 /* TestSteps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TestSteps.swift; path = ../../../Documents/TestSteps.swift; sourceTree = "<group>"; };
@@ -142,22 +142,17 @@
 		CA350C732984506E00434F8A /* Standups */ = {
 			isa = PBXGroup;
 			children = (
-				CC498D20298691CF00396AE0 /* Info.plist */,
-				CC5D01D1298533ED007889A8 /* Components.swift */,
-				CA350CAB298450BF00434F8A /* Helpers.swift */,
-				CA350CAA298450BF00434F8A /* Models.swift */,
-				CA350CA2298450BF00434F8A /* RecordMeeting.swift */,
-				CA350CA3298450BF00434F8A /* StandupForm.swift */,
-				CA350CA1298450BF00434F8A /* StandupDetail.swift */,
-				CC73AF6D2991EFDC00815483 /* Meeting.swift */,
-				CA350C742984506E00434F8A /* StandupsApp.swift */,
-				CC37D094299B508A0055C239 /* Main.swift */,
-				CA350CA9298450BF00434F8A /* StandupsList.swift */,
-				CC5D01E32986491C007889A8 /* TestSteps.swift */,
-				CA350CAC298450BF00434F8A /* Assets.xcassets */,
+				CC82BEA629B5BE25006556AC /* Components */,
 				CA350CA4298450BF00434F8A /* Dependencies */,
 				CA350C9E298450BF00434F8A /* Preview Content */,
 				CA350CD0298452F300434F8A /* Resources */,
+				CC5D01D1298533ED007889A8 /* ComponentList.swift */,
+				CA350CAB298450BF00434F8A /* Helpers.swift */,
+				CA350CAA298450BF00434F8A /* Models.swift */,
+				CA350C742984506E00434F8A /* StandupsApp.swift */,
+				CC5D01E32986491C007889A8 /* TestSteps.swift */,
+				CC498D20298691CF00396AE0 /* Info.plist */,
+				CA350CAC298450BF00434F8A /* Assets.xcassets */,
 			);
 			path = Standups;
 			sourceTree = "<group>";
@@ -211,6 +206,19 @@
 			children = (
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		CC82BEA629B5BE25006556AC /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				CA350CA2298450BF00434F8A /* RecordMeeting.swift */,
+				CA350CA3298450BF00434F8A /* StandupForm.swift */,
+				CA350CA1298450BF00434F8A /* StandupDetail.swift */,
+				CC73AF6D2991EFDC00815483 /* Meeting.swift */,
+				CC37D094299B508A0055C239 /* Main.swift */,
+				CA350CA9298450BF00434F8A /* StandupsList.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -366,7 +374,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CC5D01D2298533ED007889A8 /* Components.swift in Sources */,
+				CC5D01D2298533ED007889A8 /* ComponentList.swift in Sources */,
 				CA350CB7298450BF00434F8A /* Models.swift in Sources */,
 				CA350CB4298450BF00434F8A /* OpenSettings.swift in Sources */,
 				CA350C752984506E00434F8A /* StandupsApp.swift in Sources */,
