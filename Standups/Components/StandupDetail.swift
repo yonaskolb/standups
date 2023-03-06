@@ -359,6 +359,7 @@ struct StandupDetailComponent: PreviewProvider, Component {
             }
             // Step.input(.record(.meetingFinished(transcript: "Hello")))
             Step.advanceClock()
+                .expectEmptyRoute()
                 .expectState {
                     $0.standup.meetings = [
                         Meeting(
@@ -385,6 +386,7 @@ struct StandupDetailComponent: PreviewProvider, Component {
                 .expectState(\.standup, editedStandup)
                 .expectOutput(.standupEdited(editedStandup))
                 .expectState(\.standup, editedStandup)
+                .expectEmptyRoute()
         }
     }
 

@@ -317,6 +317,7 @@ struct StandupsListComponent: PreviewProvider, Component {
                 .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
             Step.input(.detail(.standupEdited(editedStandup)))
                 .expectState(\.standups, [.mock, editedStandup])
+                .expectEmptyRoute()
         }
 
         Test("load", state: .init()) {
