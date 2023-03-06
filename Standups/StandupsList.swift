@@ -326,29 +326,25 @@ struct StandupsListComponent: PreviewProvider, Component {
                 .expectState(\.standups, [.mock, editedStandup])
         }
 
-        Test("load successful", state: .init()) {
-            Step.dependency(\.dataManager.load) { _ in try JSONEncoder().encode([Standup.mock, .designMock])
+        Test("load", state: .init()) {
+            Step.fork("successful") {
+                Step.dependency(\.dataManager, .mockStandups([.mock, .designMock]))
+                Step.appear()
+                    .expectState(\.standups, [.mock, .designMock])
             }
-            Step.appear()
-                .expectState(\.standups, [.mock, .designMock])
-        }
-
-        Test("load decoding failure", state: .init()) {
-            Step.dependency(\.dataManager, .mock(initialData: Data("bad data".utf8)))
-            Step.appear()
-                .expectState(\.alert, .dataFailedToLoad)
-            Step.action(.alertButton(.confirmLoadMockData))
-                .expectState(\.standups, [.mock, .designMock, .engineeringMock])
-            Step.binding(\.alert, nil)
-        }
-
-        Test("load silent failure", state: .init()) {
-            Step.dependency(\.dataManager.load, { _ in
-                struct FileNotFound: Error {}
-                throw FileNotFound()
-            })
-            Step.appear()
-                .expectState(\.alert, nil)
+            Step.fork("load failure") {
+                Step.dependency(\.dataManager, .failToLoad)
+                Step.appear()
+                    .expectState(\.alert, nil)
+            }
+            Step.fork("decoding failure") {
+                Step.dependency(\.dataManager, .failToDecode)
+                Step.appear()
+                    .expectState(\.alert, .dataFailedToLoad)
+                Step.action(.alertButton(.confirmLoadMockData))
+                    .expectState(\.standups, [.mock, .designMock, .engineeringMock])
+                Step.binding(\.alert, nil)
+            }
         }
     }
 }
