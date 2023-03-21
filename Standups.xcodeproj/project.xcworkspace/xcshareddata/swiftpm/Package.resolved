@@ -95,8 +95,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-identified-collections.git",
       "state" : {
-        "revision" : "fd34c544ad27f3ba6b19142b348005bfa85b6005",
-        "version" : "0.6.0"
+        "revision" : "ad3932d28c2e0a009a0167089619526709ef6497",
+        "version" : "0.7.0"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-tagged.git",
       "state" : {
-        "revision" : "af06825aaa6adffd636c10a2570b2010c7c07e6a",
-        "version" : "0.9.0"
+        "revision" : "3907a9438f5b57d317001dc99f3f11b46882272b",
+        "version" : "0.10.0"
       }
     },
     {
@@ -140,8 +140,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swiftui-navigation.git",
       "state" : {
-        "revision" : "bf0fb9d53019cbde1a1e0cf290b560a0a0411282",
-        "version" : "0.6.0"
+        "revision" : "47dd574b900ba5ba679f56ea00d4d282fc7305a6",
+        "version" : "0.7.1"
       }
     },
     {

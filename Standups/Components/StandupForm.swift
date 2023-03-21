@@ -35,10 +35,12 @@ struct StandupFormModel: ComponentModel {
                 store.standup.attendees.append(attendee)
                 store.focus = .attendee(attendee.id)
             case .deleteAttendees(let indices):
-                store.standup.attendees.remove(atOffsets: indices)
-                if store.standup.attendees.isEmpty {
-                    store.standup.attendees.append(Attendee(id: Attendee.ID(self.uuid())))
+                var attendees = store.standup.attendees
+                attendees.remove(atOffsets: indices)
+                if attendees.isEmpty {
+                    attendees.append(Attendee(id: Attendee.ID(self.uuid())))
                 }
+                store.standup.attendees = attendees
 
                 guard let firstIndex = indices.first
                 else { return }
@@ -132,12 +134,15 @@ struct StandupFormComponent: PreviewProvider, Component {
         Test("fill", state: .init(standup: .init(id: .init()))) {
             Step.dependency(\.uuid, .incrementing)
             Step.appear()
+                .expectState(\.standup.attendees, [.init(id: "0")])
             Step.binding(\.standup.title, "Engineering")
             Step.binding(\.standup.duration, .seconds(20))
             Step.binding(\.standup.theme, .navy)
             Step.binding(\.focus, .attendee("0"))
             Step.binding(\.standup.attendees[id: "0"]!.name, "Tahmina")
             Step.action(.addAttendee)
+                .expectState(\.standup.attendees, [.init(id: "0", name: "Tahmina"), .init(id: "1")])
+                .expectState(\.focus, .attendee("1"))
             Step.binding(\.standup.attendees[id: "1"]!.name, "Sarah")
         }
         Test("add attendee", state: .init(standup: .init(id: .init(), title: "Engineering"))) {
@@ -170,6 +175,12 @@ struct StandupFormComponent: PreviewProvider, Component {
             Step.dependency(\.uuid, uuid)
             Step.appear()
             Step.action(.deleteAttendees([0]))
+                .expectState(\.focus, .attendee("1"))
+                .expectState(\.standup.attendees, [
+                    Attendee(id: "1"),
+                    Attendee(id: "2"),
+                    Attendee(id: "3"),
+                ])
                 .expectState {
                     $0.focus = .attendee("1")
                     $0.standup.attendees = [

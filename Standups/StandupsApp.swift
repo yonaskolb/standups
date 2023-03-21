@@ -8,6 +8,7 @@ import Foundation
 struct StandupsApp: App {
 
     let eventSubscription: AnyCancellable
+    @StateObject var model: ViewModel<MainModel> = .init(state: .init())
 
     init() {
         eventSubscription = EventStore.shared.eventPublisher.sink { event in
@@ -45,7 +46,7 @@ struct StandupsApp: App {
                 withDependencies {
                     $0.dataManager = .mock()
                 } operation: {
-                    MainView(model: .init(state: .init()))
+                    MainView(model: model)
                 }
             } else if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
                 // Unit test
@@ -58,7 +59,7 @@ struct StandupsApp: App {
                     ComponentListView(components: components)
                 }
             } else {
-                MainView(model: .init(state: .init()))
+                MainView(model: model)
             }
         }
     }

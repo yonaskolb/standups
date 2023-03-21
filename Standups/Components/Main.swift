@@ -5,10 +5,10 @@ import SwiftUI
 
 struct MainModel: ComponentModel {
 
-    static let standups = Scope<StandupsListModel> { $0.scope(statePath: \.standups) }
+    static let standupList = Scope<StandupsListModel> { $0.scope(state: \.standupList) }
 
     struct State {
-        var standups: StandupsListModel.State = .init()
+        var standupList: StandupsListModel.State = .init()
     }
 }
 
@@ -17,7 +17,7 @@ struct MainView: ComponentView {
 
     var view: some View {
         NavigationView {
-            StandupsList(model: model.scope(Model.standups))
+            StandupsList(model: model.scope(Model.standupList))
         }
     }
 }
@@ -40,7 +40,8 @@ struct MainComponent: PreviewProvider, Component {
         Test("app walkthrough", state: .init(), assertions: []) {
             Step.dependency(\.dataManager, .mockStandups([]))
             Step.dependency(\.uuid, .incrementing)
-            Step.scope(Model.standups) {
+            Step.appear()
+            Step.scope(Model.standupList) {
                 $0.appear()
                 $0.action(.addStandup)
                     .expectRoute(/StandupsListModel.Route.add, state: .init(standup: Standup(id: "0")))

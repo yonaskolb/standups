@@ -14,7 +14,7 @@ struct RecordMeetingModel: ComponentModel {
 
     struct State {
         var standup: Standup
-        var destination: Destination?
+        var alert: AlertState<AlertAction>?
         var secondsElapsed = 0
         var speakerIndex = 0
         var transcript = ""
@@ -24,19 +24,14 @@ struct RecordMeetingModel: ComponentModel {
         }
 
         var isAlertOpen: Bool {
-            switch destination {
-                case .alert:
-                    return true
-                case .none:
-                    return false
-            }
+            alert != nil
         }
 
         init(
-            destination: Destination? = nil,
+            alert: AlertState<AlertAction>? = nil,
             standup: Standup
         ) {
-            self.destination = destination
+            self.alert = alert
             self.standup = standup
         }
     }
@@ -44,10 +39,6 @@ struct RecordMeetingModel: ComponentModel {
     enum Output {
         case dismiss
         case meetingFinished(transcript: String)
-    }
-
-    enum Destination {
-        case alert(AlertState<AlertAction>)
     }
 
     enum AlertAction {
@@ -89,7 +80,7 @@ struct RecordMeetingModel: ComponentModel {
             case .nextSpeaker:
                 guard store.speakerIndex < store.standup.attendees.count - 1
                 else {
-                    store.destination = .alert(.endMeeting(isDiscardable: false))
+                    store.alert = .endMeeting(isDiscardable: false)
                     return
                 }
 
@@ -97,7 +88,7 @@ struct RecordMeetingModel: ComponentModel {
                 store.speakerIndex += 1
                 store.secondsElapsed = store.speakerIndex * Int(store.standup.durationPerAttendee.components.seconds)
             case .endMeeting:
-                store.destination = .alert(.endMeeting(isDiscardable: true))
+                store.alert = .endMeeting(isDiscardable: true)
             case .alertButton(let action):
                 switch action {
                     case .confirmSave?:
@@ -106,7 +97,7 @@ struct RecordMeetingModel: ComponentModel {
                         store.output(.dismiss)
                     case .none: break
                 }
-                store.destination = nil
+                store.alert = nil
             case .finishMeeting:
                 finishMeeting(model: store)
         }
@@ -126,7 +117,7 @@ struct RecordMeetingModel: ComponentModel {
             if !model.transcript.isEmpty {
                 model.transcript += " ❌"
             }
-            model.destination = .alert(.speechRecognizerFailed)
+            model.alert = .speechRecognizerFailed
         }
     }
 
@@ -222,10 +213,7 @@ struct RecordMeetingView: ComponentView {
             }
         }
         .navigationBarBackButtonHidden(true)
-        .alert(
-            unwrapping: model.binding(\.destination),
-            case: /RecordMeetingModel.Destination.alert
-        ) { action in
+        .alert(unwrapping: model.binding(\.alert)) { action in
             model.send(.alertButton(action))
         }
     }
@@ -398,11 +386,11 @@ struct RecordMeetingComponent: PreviewProvider, Component {
                     Attendee(id: Attendee.ID()),
                     Attendee(id: Attendee.ID()),
                 ],
-                duration: .seconds(3)
+                duration: .seconds(2)
             ))
         }
         State("failed speech") {
-            .init(destination: .alert(.speechRecognizerFailed), standup: .mock)
+            .init(alert: .speechRecognizerFailed, standup: .mock)
         }
     }
 
@@ -429,37 +417,44 @@ struct RecordMeetingComponent: PreviewProvider, Component {
                     soundEffectPlayCount.value == 1
                 }
             Step.advanceClock()
+                .expectState(\.secondsElapsed, 2)
                 .expectOutput(.meetingFinished(transcript: ""))
         }
 
-        Test("record transcript", stateName: "default") {
+        Test("record transcript", stateName: "quick") {
             Step.dependency(\.speechClient, .string("hello"))
-            Step.dependency(\.continuousClock, ImmediateClock())
-            Step.appear()
+            Step.dependency(\.continuousClock, TestClock())
+            Step.appear(await: false)
+            Step.advanceClock(.seconds(1))
+                .expectState(\.secondsElapsed, 1)
+                .expectState(\.speakerIndex, 1)
+                .expectState(\.transcript, "hello")
+            Step.advanceClock(.seconds(1))
+                .expectState(\.secondsElapsed, 2)
                 .expectOutput(.meetingFinished(transcript: "hello"))
         }
 
-        Test("end meeting save", stateName: "default") {
+        Test("end meeting", stateName: "default") {
             Step.dependency(\.speechClient.authorizationStatus, { .denied })
             Step.dependency(\.continuousClock, TestClock())
             Step.appear(await: false)
             Step.action(.endMeeting)
-                .expectState(\.destination, .alert(.endMeeting(isDiscardable: true)))
+                .expectState(\.alert, .endMeeting(isDiscardable: true))
             Step.advanceClock(.seconds(10))
                 .expectState {
                     // has paused
                     $0.secondsElapsed = 0
                     $0.speakerIndex = 0
                 }
-            Step.action(.alertButton(.confirmSave))
-                .expectOutput(.meetingFinished(transcript: ""))
-        }
-
-        Test("end meeting discard", stateName: "default") {
-            Step.action(.endMeeting)
-                .expectState(\.destination, .alert(.endMeeting(isDiscardable: true)))
-            Step.action(.alertButton(.confirmDiscard))
-                .expectOutput(.dismiss)
+            Step.fork("save") {
+                Step.action(.alertButton(.confirmSave))
+                    .expectOutput(.meetingFinished(transcript: ""))
+                    .expectState(\.alert, .none)
+            }
+            Step.fork("discard") {
+                Step.action(.alertButton(.confirmDiscard))
+                    .expectOutput(.dismiss)
+            }
         }
 
         Test("next speaker", stateName: "quick") {
@@ -484,7 +479,7 @@ struct RecordMeetingComponent: PreviewProvider, Component {
                     soundEffectPlayCount.value == 1
                 }
             Step.action(.nextSpeaker)
-                .expectState(\.destination, .alert(.endMeeting(isDiscardable: false)))
+                .expectState(\.alert, .endMeeting(isDiscardable: false))
             Step.advanceClock()
                 .expectState {
                     $0.speakerIndex = 1
@@ -498,28 +493,24 @@ struct RecordMeetingComponent: PreviewProvider, Component {
                 .expectOutput(.meetingFinished(transcript: "hello"))
         }
 
-        Test("speech failure continue", stateName: "quick") {
+        Test("speech failure", stateName: "quick", assertions: []) {
             Step.dependency(\.speechClient, .string("I completed the project", fail: true))
             Step.dependency(\.continuousClock, TestClock())
             Step.appear(await: false)
             Step.advanceClock()
-                .expectState {
-                    $0.destination = .alert(.speechRecognizerFailed)
-                }
-            Step.action(.alertButton(.none))
-                .expectState(\.destination, nil)
-            Step.advanceClock(.seconds(60))
-                .expectOutput(.meetingFinished(transcript: "I completed the project ❌"))
-        }
-
-        Test("speech failure discard", stateName: "quick") {
-            Step.dependency(\.speechClient, .string("", fail: true))
-            Step.dependency(\.continuousClock, TestClock())
-            Step.appear(await: false)
-            Step.advanceClock()
-                .expectState(\.destination, .alert(.speechRecognizerFailed))
-            Step.action(.alertButton(.confirmDiscard))
-                .expectOutput(.dismiss)
+                .expectState(\.alert, .speechRecognizerFailed)
+                .expectState(\.transcript, "I completed the project ❌")
+            Step.fork("continue") {
+                Step.action(.alertButton(.none))
+                    .expectState(\.alert, .none)
+                Step.advanceClock(.seconds(60))
+                    .expectOutput(.meetingFinished(transcript: "I completed the project ❌"))
+            }
+            Step.fork("discard") {
+                Step.action(.alertButton(.confirmDiscard))
+                    .expectState(\.alert, .none)
+                    .expectOutput(.dismiss)
+            }
         }
     }
 }

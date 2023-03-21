@@ -86,7 +86,7 @@ struct StandupsListModel: ComponentModel {
                 store.route(to: Route.detail, state: .init(standup: standup))
             case .alertButton(let action):
                 switch action {
-                    case .confirmLoadMockData?:
+                    case .confirmLoadMockData:
                         withAnimation {
                             store.standups = [
                                 .mock,
@@ -94,7 +94,7 @@ struct StandupsListModel: ComponentModel {
                                 .engineeringMock,
                             ]
                         }
-                    case nil:
+                    case .none:
                         break
                 }
         }
@@ -263,7 +263,7 @@ struct StandupsListComponent: PreviewProvider, Component {
     }
 
     static var tests: Tests {
-        Test("add", state: .init()) {
+        Test("Add", state: .init()) {
             let mainQueue = DispatchQueue.test
             let standups = LockIsolated<[Standup]>([])
             let standup = Standup(id: "0")
@@ -288,25 +288,27 @@ struct StandupsListComponent: PreviewProvider, Component {
             Step.action(.confirmAddStandup(addedStandupWithExtra))
                 .expectEmptyRoute()
                 .expectState(\.standups, [addedStandup])
-            Step.run("run main") { await mainQueue.run() }
+            Step.run("Run main") { await mainQueue.run() }
                 .validateState("saved standup") {
                     standups.value == $0.standups.elements
                 }
         }
 
-        Test("delete", state: .init(standups: .init(uniqueElements: [Standup.mock, Standup.designMock]))) {
+        Test("Delete", state: .init(standups: [.mock, .designMock]), assertions: .all) {
             Step.action(.standupTapped(.designMock))
                 .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
             Step.route(/Model.Route.detail) {
                 $0.action(.delete)
+                    .expectState(\.alert, .deleteStandup)
                 $0.action(.alertButton(.confirmDeletion))
                     .expectOutput(.standupDeleted(Standup.designMock.id))
+                    .expectState(\.alert, nil)
             }
             .expectEmptyRoute()
             .expectState(\.standups, [.mock])
         }
 
-        Test("edit", state: .init(standups: .init(uniqueElements: [Standup.mock, Standup.designMock]))) {
+        Test("Edit", state: .init(standups: [.mock, .designMock])) {
             let editedStandup: Standup = {
                 var standup = Standup.designMock
                 standup.title = "Engineering"
@@ -320,7 +322,7 @@ struct StandupsListComponent: PreviewProvider, Component {
                 .expectEmptyRoute()
         }
 
-        Test("load", state: .init()) {
+        Test("Load", state: .init()) {
             Step.fork("successful") {
                 Step.dependency(\.dataManager, .mockStandups([.mock, .designMock]))
                 Step.appear()

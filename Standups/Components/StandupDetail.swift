@@ -107,6 +107,7 @@ struct StandupDetailModel: ComponentModel {
     func handle(input: Input, store: Store) async {
         switch input {
             case .record(.meetingFinished(let transcript)):
+                store.dismissRoute()
                 let didCancel = (try? await self.clock.sleep(for: .milliseconds(400))) == nil
                 withAnimation(didCancel ? nil : .default) {
                     store.standup.meetings.insert(
@@ -117,7 +118,6 @@ struct StandupDetailModel: ComponentModel {
                         ),
                         at: 0
                     )
-                    store.dismissRoute()
                 }
             case .record(.dismiss):
                 store.dismissRoute()
@@ -293,6 +293,9 @@ struct StandupDetailComponent: PreviewProvider, Component {
         State("default") {
             .init(standup: .mock)
         }
+        State("empty") {
+            .init(standup: .init(id: "0"))
+        }
         State("speech denied") {
             .init(standup: .mock, alert: .speechRecognitionDenied)
         }
@@ -306,36 +309,42 @@ struct StandupDetailComponent: PreviewProvider, Component {
             Step.dependency(\.speechClient.authorizationStatus, { .restricted })
             Step.action(.startMeeting)
                 .expectState(\.alert, .speechRecognitionRestricted)
-            Step.binding(\.alert, .none)
+            Step.fork("cancel") {
+                Step.binding(\.alert, .none)
+                    .expectState(\.alert, .none)
+            }
+            Step.fork("continue") {
+                Step.action(.alertButton(.continueWithoutRecording))
+                    .expectRoute(/Model.Route.record, state: .init(standup: .mock))
+                    .expectState(\.alert, .none)
+            }
         }
 
         Test("speech denied", stateName: "default") {
             Step.dependency(\.speechClient.authorizationStatus, { .denied })
             Step.action(.startMeeting)
                 .expectState(\.alert, .speechRecognitionDenied)
+            Step.fork("continue") {
+                Step.action(.alertButton(.continueWithoutRecording))
+                    .expectState(\.alert, .none)
+                    .expectRoute(/Model.Route.record, state: .init(standup: .mock))
+                Step.input(.record(.dismiss))
+                    .expectEmptyRoute()
+            }
+            Step.fork("open settings") {
+                let settingsOpened = LockIsolated(false)
+                Step.dependency(\.openSettings, { settingsOpened.setValue(true) })
+                Step.action(.alertButton(.openSettings))
+                    .validateState("settings opened") { _ in
+                        settingsOpened.value == true
+                    }
+                    .expectState(\.alert, .none)
+            }
+            Step.fork("cancel") {
+                Step.binding(\.alert, .none)
+                    .expectState(\.alert, .none)
+            }
             Step.binding(\.alert, .none)
-        }
-
-        Test("open settings", stateName: "default") {
-            Step.dependency(\.speechClient.authorizationStatus, { .denied })
-            Step.action(.startMeeting)
-                .expectState(\.alert, .speechRecognitionDenied)
-            let settingsOpened = LockIsolated(false)
-            Step.dependency(\.openSettings, { settingsOpened.setValue(true) })
-            Step.binding(\.alert, .none)
-            Step.action(.alertButton(.openSettings))
-                .validateState("settings opened") { _ in
-                    settingsOpened.value == true
-                }
-        }
-
-        Test("continue without recording", state: .init(standup: .mock)) {
-            Step.dependency(\.speechClient.authorizationStatus, { .denied })
-            Step.action(.startMeeting)
-                .expectState(\.alert, .speechRecognitionDenied)
-            Step.binding(\.alert, .none)
-            Step.action(.alertButton(.continueWithoutRecording))
-                .expectRoute(/Model.Route.record, state: .init(standup: .mock))
         }
 
         Test("speech authorized", stateName: "default") {
@@ -349,15 +358,18 @@ struct StandupDetailComponent: PreviewProvider, Component {
             Step.dependency(\.continuousClock, TestClock())
             Step.dependency(\.uuid, .incrementing)
             Step.dependency(\.date, .constant(Date(timeIntervalSince1970: 1_234_567_890)))
+            Step.dependency(\.speechClient, .string("Hello"))
             Step.action(.startMeeting)
                 .expectRoute(/Model.Route.record, state: .init(standup: standup))
             Step.route(/Model.Route.record) {
                 $0.binding(\.transcript, "Hello")
                 $0.action(.endMeeting)
+                    .expectState(\.alert, .endMeeting(isDiscardable: true))
                 $0.action(.alertButton(.confirmSave))
+                    .expectState(\.alert, .none)
                     .expectOutput(.meetingFinished(transcript: "Hello"))
             }
-            // Step.input(.record(.meetingFinished(transcript: "Hello")))
+            .expectEmptyRoute()
             Step.advanceClock()
                 .expectEmptyRoute()
                 .expectState {
@@ -371,11 +383,7 @@ struct StandupDetailComponent: PreviewProvider, Component {
                 }
         }
 
-        let editedStandup: Standup = {
-            var standup = standup
-            standup.title = "Engineering"
-            return standup
-        }()
+        let editedStandup = Standup(id: "0", title: "Engineering")
         Test("edit", state: .init(standup: standup)) {
             Step.action(.edit)
                 .expectRoute(/Model.Route.edit, state: .init(standup: standup))
@@ -385,7 +393,6 @@ struct StandupDetailComponent: PreviewProvider, Component {
             Step.action(.doneEditing(editedStandup))
                 .expectState(\.standup, editedStandup)
                 .expectOutput(.standupEdited(editedStandup))
-                .expectState(\.standup, editedStandup)
                 .expectEmptyRoute()
         }
     }
