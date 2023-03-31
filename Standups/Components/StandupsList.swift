@@ -69,7 +69,7 @@ struct StandupsListModel: ComponentModel {
     func handle(action: Action, store: Store) async {
         switch action {
             case .addStandup:
-                store.route(to: Route.add, state: .init(standup: Standup(id: Standup.ID(uuid()))))
+                store.route(to: Route.add, state: .init(standup: Standup(id: .init(uuid()))))
             case .dismissAddStandup:
                 store.dismissRoute()
             case .confirmAddStandup(let standup):

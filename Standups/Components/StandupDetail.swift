@@ -1,5 +1,4 @@
 import Clocks
-import CustomDump
 import Dependencies
 import SwiftComponent
 import SwiftUI
@@ -394,6 +393,13 @@ struct StandupDetailComponent: PreviewProvider, Component {
                 .expectState(\.standup, editedStandup)
                 .expectOutput(.standupEdited(editedStandup))
                 .expectEmptyRoute()
+        }
+
+        Test("delete", stateName: "default") {
+            Step.action(.delete)
+                .expectState(\.alert, .deleteStandup)
+            Step.action(.alertButton(.confirmDeletion))
+                .expectOutput(.standupDeleted(Standup.mock.id))
         }
     }
 

@@ -147,6 +147,7 @@
 				CA350C9E298450BF00434F8A /* Preview Content */,
 				CA350CD0298452F300434F8A /* Resources */,
 				CC5D01D1298533ED007889A8 /* ComponentList.swift */,
+				CC73AF6F2991F23A00815483 /* Mocks.swift */,
 				CA350CAB298450BF00434F8A /* Helpers.swift */,
 				CA350CAA298450BF00434F8A /* Models.swift */,
 				CA350C742984506E00434F8A /* StandupsApp.swift */,
@@ -177,7 +178,6 @@
 			isa = PBXGroup;
 			children = (
 				CA350C9F298450BF00434F8A /* Preview Assets.xcassets */,
-				CC73AF6F2991F23A00815483 /* Mocks.swift */,
 			);
 			path = "Preview Content";
 			sourceTree = "<group>";
