@@ -294,7 +294,7 @@ struct StandupsListComponent: PreviewProvider, Component {
                 }
         }
 
-        Test("Delete", state: .init(standups: [.mock, .designMock]), assertions: .all) {
+        Test("Delete", state: Model.State(standups: [.mock, .designMock]), assertions: .all) {
             Step.action(.standupTapped(.designMock))
                 .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
             Step.route(/Model.Route.detail) {
@@ -308,7 +308,7 @@ struct StandupsListComponent: PreviewProvider, Component {
             .expectState(\.standups, [.mock])
         }
 
-        Test("Edit", state: .init(standups: [.mock, .designMock])) {
+        Test("Edit", state: Model.State(standups: [.mock, .designMock])) {
             let editedStandup: Standup = {
                 var standup = Standup.designMock
                 standup.title = "Engineering"
