@@ -42,29 +42,29 @@ struct MainComponent: PreviewProvider, Component {
             Step.dependency(\.uuid, .incrementing)
             Step.appear()
             Step.scope(Model.standupList) {
-                $0.appear()
-                $0.action(.addStandup)
+                Step.appear()
+                Step.action(.addStandup)
                     .expectRoute(/StandupsListModel.Route.add, state: .init(standup: Standup(id: "0")))
-                $0.route(/StandupsListModel.Route.add) {
-                    $0.binding(\.standup.title, "Engineering")
+                Step.route(/StandupsListModel.Route.add) {
+                    Step.binding(\.standup.title, "Engineering")
                 }
                 let createdStandup = Standup(id: "0", title: "Engineering")
-                $0.action(.confirmAddStandup(createdStandup))
-                $0.action(.standupTapped(createdStandup))
+                Step.action(.confirmAddStandup(createdStandup))
+                Step.action(.standupTapped(createdStandup))
                     .expectRoute(/StandupsListModel.Route.detail, state: .init(standup: createdStandup))
-                $0.route(/StandupsListModel.Route.detail) {
-                    $0.action(.edit)
-                    $0.route(/StandupDetailModel.Route.edit) {
-                        $0.binding(\.standup.theme, .buttercup)
+                Step.route(/StandupsListModel.Route.detail) {
+                    Step.action(.edit)
+                    Step.route(/StandupDetailModel.Route.edit) {
+                        Step.binding(\.standup.theme, .buttercup)
                     }
                     let editedStandup = Standup(id: "0", theme: .buttercup, title: "Engineering")
-                    $0.action(.doneEditing(editedStandup))
-                    $0.action(.startMeeting)
-                    $0.route(/StandupDetailModel.Route.record) {
-                        $0.appear(await: false)
-                        $0.binding(\.transcript, "Hello")
-                        $0.action(.endMeeting)
-                        $0.action(.alertButton(.confirmSave))
+                    Step.action(.doneEditing(editedStandup))
+                    Step.action(.startMeeting)
+                    Step.route(/StandupDetailModel.Route.record) {
+                        Step.appear(await: false)
+                        Step.binding(\.transcript, "Hello")
+                        Step.action(.endMeeting)
+                        Step.action(.alertButton(.confirmSave))
                     }
                 }
             }

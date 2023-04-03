@@ -298,9 +298,9 @@ struct StandupsListComponent: PreviewProvider, Component {
             Step.action(.standupTapped(.designMock))
                 .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
             Step.route(/Model.Route.detail) {
-                $0.action(.delete)
+                Step.action(.delete)
                     .expectState(\.alert, .deleteStandup)
-                $0.action(.alertButton(.confirmDeletion))
+                Step.action(.alertButton(.confirmDeletion))
                     .expectOutput(.standupDeleted(Standup.designMock.id))
                     .expectState(\.alert, nil)
             }
