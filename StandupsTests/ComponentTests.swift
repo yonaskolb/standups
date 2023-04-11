@@ -46,7 +46,7 @@ final class ComponentTests: QuickSpec {
             }
             message += "\(step.description) failed: \(error.error)"
             if let diff = error.diff {
-                message += "\n\n\(diff)"
+                message += "\n\n\(diff.joined(separator: "\n"))"
             }
 
             XCTFail(message, file: error.source.file, line: error.source.line)
