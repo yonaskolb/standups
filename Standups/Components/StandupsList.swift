@@ -297,15 +297,9 @@ struct StandupsListComponent: PreviewProvider, Component {
         Test("Delete", state: Model.State(standups: [.mock, .designMock]), assertions: .all) {
             Step.action(.standupTapped(.designMock))
                 .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
-            Step.route(/Model.Route.detail) {
-                Step.action(.delete)
-                    .expectState(\.alert, .deleteStandup)
-                Step.action(.alertButton(.confirmDeletion))
-                    .expectOutput(.standupDeleted(Standup.designMock.id))
-                    .expectState(\.alert, nil)
-            }
-            .expectEmptyRoute()
-            .expectState(\.standups, [.mock])
+            Step.route(/Model.Route.detail, output: .standupDeleted(Standup.designMock.id))
+                .expectEmptyRoute()
+                .expectState(\.standups, [.mock])
         }
 
         Test("Edit", state: Model.State(standups: [.mock, .designMock])) {
@@ -317,7 +311,7 @@ struct StandupsListComponent: PreviewProvider, Component {
             }()
             Step.action(.standupTapped(.designMock))
                 .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
-            Step.input(.detail(.standupEdited(editedStandup)))
+            Step.route(/Model.Route.detail, output: .standupEdited(editedStandup))
                 .expectState(\.standups, [.mock, editedStandup])
                 .expectEmptyRoute()
         }
