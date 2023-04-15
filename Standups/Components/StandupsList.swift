@@ -1,15 +1,10 @@
 import Combine
-import Dependencies
 import IdentifiedCollections
 import SwiftComponent
 import SwiftUI
 import SwiftUINavigation
 
 struct StandupsListModel: ComponentModel {
-
-    @Dependency(\.dataManager) var dataManager
-    @Dependency(\.uuid) var uuid
-    @Dependency(\.mainQueue) var mainQueue
 
     struct State {
         var standups: IdentifiedArrayOf<Standup> = []
@@ -50,7 +45,7 @@ struct StandupsListModel: ComponentModel {
         do {
             store.standups = try JSONDecoder().decode(
                 IdentifiedArray.self,
-                from: self.dataManager.load(.standups)
+                from: store.dependencies.dataManager.load(.standups)
             )
         } catch is DecodingError {
             store.alert = .dataFailedToLoad
@@ -59,9 +54,9 @@ struct StandupsListModel: ComponentModel {
         }
 
         store.statePublisher(\.standups)
-            .debounce(for: .seconds(1), scheduler: self.mainQueue)
+            .debounce(for: .seconds(1), scheduler: store.dependencies.mainQueue)
             .sink { standups in
-                try? dataManager.save(JSONEncoder().encode(standups), .standups)
+                try? store.dependencies.dataManager.save(JSONEncoder().encode(standups), .standups)
             }
             .store(in: &store.cancellables)
     }
@@ -69,7 +64,7 @@ struct StandupsListModel: ComponentModel {
     func handle(action: Action, store: Store) async {
         switch action {
             case .addStandup:
-                store.route(to: Route.add, state: .init(standup: Standup(id: .init(uuid()))))
+                store.route(to: Route.add, state: .init(standup: Standup(id: .init(store.dependencies.uuid()))))
             case .dismissAddStandup:
                 store.dismissRoute()
             case .confirmAddStandup(let standup):
@@ -78,7 +73,7 @@ struct StandupsListModel: ComponentModel {
                     attendee.name.allSatisfy(\.isWhitespace)
                 }
                 if standup.attendees.isEmpty {
-                    standup.attendees.append(Attendee(id: Attendee.ID(self.uuid())))
+                    standup.attendees.append(Attendee(id: Attendee.ID(store.dependencies.uuid())))
                 }
                 store.standups.append(standup)
                 store.dismissRoute()

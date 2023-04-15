@@ -5,8 +5,6 @@ import SwiftComponent
 
 struct StandupFormModel: ComponentModel {
 
-    @Dependency(\.uuid) var uuid
-
     struct State {
         var focus: Field? = .title
         var standup: Standup
@@ -24,21 +22,21 @@ struct StandupFormModel: ComponentModel {
 
     func appear(store: Store) async {
         if store.standup.attendees.isEmpty {
-            store.standup.attendees.append(Attendee(id: Attendee.ID(self.uuid())))
+            store.standup.attendees.append(Attendee(id: Attendee.ID(store.dependencies.uuid())))
         }
     }
 
     func handle(action: Action, store: Store) async {
         switch action {
             case .addAttendee:
-                let attendee = Attendee(id: Attendee.ID(self.uuid()))
+                let attendee = Attendee(id: Attendee.ID(store.dependencies.uuid()))
                 store.standup.attendees.append(attendee)
                 store.focus = .attendee(attendee.id)
             case .deleteAttendees(let indices):
                 var attendees = store.standup.attendees
                 attendees.remove(atOffsets: indices)
                 if attendees.isEmpty {
-                    attendees.append(Attendee(id: Attendee.ID(self.uuid())))
+                    attendees.append(Attendee(id: Attendee.ID(store.dependencies.uuid())))
                 }
                 store.standup.attendees = attendees
 

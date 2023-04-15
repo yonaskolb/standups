@@ -7,12 +7,6 @@ import XCTestDynamicOverlay
 
 struct StandupDetailModel: ComponentModel {
 
-    @Dependency(\.continuousClock) var clock
-    @Dependency(\.date.now) var now
-    @Dependency(\.openSettings) var openSettings
-    @Dependency(\.speechClient.authorizationStatus) var authorizationStatus
-    @Dependency(\.uuid) var uuid
-
     struct State {
         var standup: Standup
         var alert: AlertState<AlertAction>?
@@ -74,7 +68,7 @@ struct StandupDetailModel: ComponentModel {
             case .deleteMeetings(let indices):
                 store.standup.meetings.remove(atOffsets: indices)
             case .startMeeting:
-                switch authorizationStatus() {
+                switch store.dependencies.speechClient.authorizationStatus() {
                     case .notDetermined, .authorized:
                         store.route(to: Route.record, state: .init(standup: store.standup))
                     case .denied:
@@ -92,7 +86,7 @@ struct StandupDetailModel: ComponentModel {
                     case .continueWithoutRecording?:
                         store.route(to: Route.record, state: .init(standup: store.standup))
                     case .openSettings?:
-                        await self.openSettings()
+                        await store.dependencies.openSettings()
                     case nil:
                         break
                 }
@@ -107,12 +101,12 @@ struct StandupDetailModel: ComponentModel {
         switch input {
             case .record(.meetingFinished(let transcript)):
                 store.dismissRoute()
-                let didCancel = (try? await self.clock.sleep(for: .milliseconds(400))) == nil
+                let didCancel = (try? await store.dependencies.continuousClock.sleep(for: .milliseconds(400))) == nil
                 withAnimation(didCancel ? nil : .default) {
                     store.standup.meetings.insert(
                         Meeting(
-                            id: Meeting.ID(self.uuid()),
-                            date: self.now,
+                            id: Meeting.ID(store.dependencies.uuid()),
+                            date: store.dependencies.date(),
                             transcript: transcript
                         ),
                         at: 0
@@ -357,20 +351,11 @@ struct StandupDetailComponent: PreviewProvider, Component {
             Step.dependency(\.continuousClock, TestClock())
             Step.dependency(\.uuid, .incrementing)
             Step.dependency(\.date, .constant(Date(timeIntervalSince1970: 1_234_567_890)))
-            Step.dependency(\.speechClient, .string("Hello"))
             Step.action(.startMeeting)
                 .expectRoute(/Model.Route.record, state: .init(standup: standup))
-            Step.route(/Model.Route.record) {
-                Step.binding(\.transcript, "Hello")
-                Step.action(.endMeeting)
-                    .expectState(\.alert, .endMeeting(isDiscardable: true))
-                Step.action(.alertButton(.confirmSave))
-                    .expectState(\.alert, .none)
-                    .expectOutput(.meetingFinished(transcript: "Hello"))
-            }
-            .expectEmptyRoute()
-            Step.advanceClock()
+            Step.route(/Model.Route.record, output: .meetingFinished(transcript: "Hello"))
                 .expectEmptyRoute()
+            Step.advanceClock()
                 .expectState {
                     $0.standup.meetings = [
                         Meeting(
