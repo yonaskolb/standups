@@ -362,7 +362,7 @@ struct MeetingFooterView: View {
     }
 }
 
-struct RecordMeetingComponent: PreviewProvider, Component {
+struct RecordMeetingComponent: Component, PreviewProvider {
 
     typealias Model = RecordMeetingModel
 

@@ -34,7 +34,7 @@ struct MeetingView: ComponentView {
     }
 }
 
-struct MeetingComponent: PreviewProvider, Component {
+struct MeetingComponent: Component, PreviewProvider {
 
     typealias Model = MeetingModel
 

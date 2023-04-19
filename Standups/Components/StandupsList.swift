@@ -223,7 +223,7 @@ extension URL {
     fileprivate static let standups = Self.documentsDirectory.appending(component: "standups.json")
 }
 
-struct StandupsListComponent: PreviewProvider, Component {
+struct StandupsListComponent: Component, PreviewProvider {
 
     typealias Model = StandupsListModel
 

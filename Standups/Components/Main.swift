@@ -22,7 +22,7 @@ struct MainView: ComponentView {
     }
 }
 
-struct MainComponent: PreviewProvider, Component {
+struct MainComponent: Component, PreviewProvider {
     typealias Model = MainModel
 
     static func view(model: ViewModel<Model>) -> some View {

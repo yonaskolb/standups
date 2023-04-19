@@ -272,7 +272,7 @@ extension AlertState where Action == StandupDetailModel.AlertAction {
     }
 }
 
-struct StandupDetailComponent: PreviewProvider, Component {
+struct StandupDetailComponent: Component, PreviewProvider {
 
     typealias Model = StandupDetailModel
 

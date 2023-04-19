@@ -114,7 +114,7 @@ extension Duration {
     }
 }
 
-struct StandupFormComponent: PreviewProvider, Component {
+struct StandupFormComponent: Component, PreviewProvider {
 
     typealias Model = StandupFormModel
 
