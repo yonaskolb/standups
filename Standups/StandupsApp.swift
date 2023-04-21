@@ -46,7 +46,7 @@ struct StandupsApp: App {
                 withDependencies {
                     $0.dataManager = .mock()
                 } operation: {
-                    MainView(model: model)
+                    main
                 }
             } else if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
                 // Unit test
@@ -59,9 +59,13 @@ struct StandupsApp: App {
                     ComponentListView(components: components)
                 }
             } else {
-                MainView(model: model)
+                main
             }
         }
+    }
+
+    var main: some View {
+        MainView(model: model)
     }
 }
 

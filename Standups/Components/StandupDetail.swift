@@ -17,7 +17,7 @@ struct StandupDetailModel: ComponentModel {
         case edit
         case cancel
         case startMeeting
-        case tapMeeting(Meeting)
+        case select(Meeting)
         case deleteMeetings(IndexSet)
         case alertButton(AlertAction?)
         case doneEditing(Standup)
@@ -63,7 +63,7 @@ struct StandupDetailModel: ComponentModel {
                 store.route(to: Route.edit, state: .init(standup: store.standup))
             case .cancel:
                 store.dismissRoute()
-            case .tapMeeting(let meeting):
+            case .select(let meeting):
                 store.route(to: Route.meeting, state: .init(meeting: meeting, standup: store.standup))
             case .deleteMeetings(let indices):
                 store.standup.meetings.remove(atOffsets: indices)
@@ -182,7 +182,7 @@ struct StandupDetailView: ComponentView {
             if !model.standup.meetings.isEmpty {
                 Section {
                     ForEach(model.standup.meetings) { meeting in
-                        model.button(.tapMeeting(meeting)) {
+                        model.button(.select(meeting)) {
                             HStack {
                                 Image(systemName: "calendar")
                                 Text(meeting.date, style: .date)
