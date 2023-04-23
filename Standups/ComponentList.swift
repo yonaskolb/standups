@@ -5,6 +5,7 @@ import SwiftUI
 
 #if DEBUG
 public let components: [any Component.Type] = [
+    MainComponent.self,
     StandupsListComponent.self,
     StandupDetailComponent.self,
     MeetingComponent.self,

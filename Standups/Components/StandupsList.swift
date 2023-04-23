@@ -312,11 +312,6 @@ struct StandupsListComponent: Component, PreviewProvider {
         }
 
         Test("Load", state: .init()) {
-            Step.fork("successful") {
-                Step.dependency(\.dataManager, .mockStandups([.mock, .designMock]))
-                Step.appear()
-                    .expectState(\.standups, [.mock, .designMock])
-            }
             Step.fork("load failure") {
                 Step.dependency(\.dataManager, .failToLoad)
                 Step.appear()
@@ -329,6 +324,11 @@ struct StandupsListComponent: Component, PreviewProvider {
                 Step.action(.alertButton(.confirmLoadMockData))
                     .expectState(\.standups, [.mock, .designMock, .engineeringMock])
                 Step.binding(\.alert, nil)
+            }
+            Step.fork("successful") {
+                Step.dependency(\.dataManager, .mockStandups([.mock, .designMock]))
+                Step.appear()
+                    .expectState(\.standups, [.mock, .designMock])
             }
         }
     }

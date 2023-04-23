@@ -12,6 +12,9 @@ struct SpeechClient {
 
 extension SpeechClient: DependencyKey {
   static var liveValue: SpeechClient {
+#if targetEnvironment(simulator)
+    previewValue
+#else
     let speech = Speech()
     return SpeechClient(
       authorizationStatus: { SFSpeechRecognizer.authorizationStatus() },
@@ -26,6 +29,7 @@ extension SpeechClient: DependencyKey {
         await speech.startTask(request: request)
       }
     )
+#endif
   }
 
   static var previewValue: SpeechClient {
