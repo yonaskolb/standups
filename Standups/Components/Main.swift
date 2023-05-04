@@ -1,7 +1,7 @@
 import Foundation
 import SwiftComponent
 import SwiftUI
-
+import Dependencies
 
 struct MainModel: ComponentModel {
 
@@ -58,10 +58,11 @@ struct MainComponent: Component, PreviewProvider {
                         Step.binding(\.standup.theme, .buttercup)
                     }
                     let editedStandup = Standup(id: "0", theme: .buttercup, title: "Engineering")
-                    Step.action(.doneEditing(editedStandup))
+                    Step.action(.completeEdit(editedStandup))
                     Step.action(.startMeeting)
                     Step.route(/StandupDetailModel.Route.record) {
-                        Step.appear(await: false)
+                        Step.dependency(\.speechClient, .string("hello"))
+                        Step.appear()
                         Step.binding(\.transcript, "Hello")
                         Step.action(.endMeeting)
                         Step.action(.alertButton(.confirmSave))

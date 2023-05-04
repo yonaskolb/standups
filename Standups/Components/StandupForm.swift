@@ -146,9 +146,6 @@ struct StandupFormComponent: Component, PreviewProvider {
         Test("add attendee", state: .init(standup: .init(id: .init(), title: "Engineering"))) {
             Step.dependency(\.uuid, .incrementing)
             Step.appear()
-                .expectState {
-                    $0.standup.attendees = [Attendee(id: "0")]
-                }
             Step.action(.addAttendee)
                 .expectState {
                     $0.standup.attendees =

@@ -289,26 +289,25 @@ struct StandupsListComponent: Component, PreviewProvider {
                 }
         }
 
-        Test("Delete", state: Model.State(standups: [.mock, .designMock]), assertions: .all) {
+        Test("Select", state: Model.State(standups: [.mock, .designMock]), assertions: .all) {
             Step.action(.standupTapped(.designMock))
                 .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
-            Step.route(/Model.Route.detail, output: .standupDeleted(Standup.designMock.id))
-                .expectEmptyRoute()
-                .expectState(\.standups, [.mock])
-        }
-
-        Test("Edit", state: Model.State(standups: [.mock, .designMock])) {
-            let editedStandup: Standup = {
-                var standup = Standup.designMock
-                standup.title = "Engineering"
-                standup.attendees = [.init(id: .init(), name: "Blob")]
-                return standup
-            }()
-            Step.action(.standupTapped(.designMock))
-                .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
-            Step.route(/Model.Route.detail, output: .standupEdited(editedStandup))
-                .expectState(\.standups, [.mock, editedStandup])
-                .expectEmptyRoute()
+            Step.fork("Delete") {
+                Step.route(/Model.Route.detail, output: .standupDeleted(Standup.designMock.id))
+                    .expectEmptyRoute()
+                    .expectState(\.standups, [.mock])
+            }
+            Step.fork("Edit") {
+                let editedStandup: Standup = {
+                    var standup = Standup.designMock
+                    standup.title = "Engineering"
+                    standup.attendees = [.init(id: .init(), name: "Blob")]
+                    return standup
+                }()
+                Step.route(/Model.Route.detail, output: .standupEdited(editedStandup))
+                    .expectState(\.standups, [.mock, editedStandup])
+                    .expectEmptyRoute()
+            }
         }
 
         Test("Load", state: .init()) {

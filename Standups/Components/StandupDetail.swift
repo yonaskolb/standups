@@ -15,12 +15,12 @@ struct StandupDetailModel: ComponentModel {
     enum Action {
         case delete
         case edit
-        case cancel
+        case cancelEdit
+        case completeEdit(Standup)
         case startMeeting
-        case select(Meeting)
+        case selectMeeting(Meeting)
         case deleteMeetings(IndexSet)
         case alertButton(AlertAction?)
-        case doneEditing(Standup)
     }
 
     enum Input {
@@ -61,9 +61,9 @@ struct StandupDetailModel: ComponentModel {
                 store.alert = .deleteStandup
             case .edit:
                 store.route(to: Route.edit, state: .init(standup: store.standup))
-            case .cancel:
+            case .cancelEdit:
                 store.dismissRoute()
-            case .select(let meeting):
+            case .selectMeeting(let meeting):
                 store.route(to: Route.meeting, state: .init(meeting: meeting, standup: store.standup))
             case .deleteMeetings(let indices):
                 store.standup.meetings.remove(atOffsets: indices)
@@ -90,7 +90,7 @@ struct StandupDetailModel: ComponentModel {
                     case nil:
                         break
                 }
-            case .doneEditing(let standup):
+            case .completeEdit(let standup):
                 store.standup = standup
                 store.dismissRoute()
                 store.output(.standupEdited(standup))
@@ -126,7 +126,7 @@ struct StandupDetailView: ComponentView {
         switch route {
             case .edit: return .sheet
             case .meeting: return .push
-            case .record: return .push
+            case .record: return .sheet
         }
     }
 
@@ -138,15 +138,17 @@ struct StandupDetailView: ComponentView {
                         .navigationTitle(model.standup.title)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
-                                model.button(.cancel, "Cancel")
+                                model.button(.cancelEdit, "Cancel")
                             }
                             ToolbarItem(placement: .confirmationAction) {
-                                model.button(.doneEditing(route.viewModel.state.standup), "Done")
+                                model.button(.completeEdit(route.viewModel.state.standup), "Done")
                             }
                         }
                 }
             case .record(let route):
-                RecordMeetingView(model: route.viewModel)
+                NavigationView {
+                    RecordMeetingView(model: route.viewModel)
+                }
             case .meeting(let route):
                 MeetingView(model: route.viewModel)
         }
@@ -182,7 +184,7 @@ struct StandupDetailView: ComponentView {
             if !model.standup.meetings.isEmpty {
                 Section {
                     ForEach(model.standup.meetings) { meeting in
-                        model.button(.select(meeting)) {
+                        model.button(.selectMeeting(meeting)) {
                             HStack {
                                 Image(systemName: "calendar")
                                 Text(meeting.date, style: .date)
@@ -351,6 +353,7 @@ struct StandupDetailComponent: Component, PreviewProvider {
             Step.dependency(\.continuousClock, TestClock())
             Step.dependency(\.uuid, .incrementing)
             Step.dependency(\.date, .constant(Date(timeIntervalSince1970: 1_234_567_890)))
+            Step.dependency(\.speechClient, .string("Hello"))
             Step.action(.startMeeting)
                 .expectRoute(/Model.Route.record, state: .init(standup: standup))
             Step.route(/Model.Route.record, output: .meetingFinished(transcript: "Hello"))
@@ -374,7 +377,7 @@ struct StandupDetailComponent: Component, PreviewProvider {
             Step.route(/Model.Route.edit) {
                 Step.binding(\.standup.title, editedStandup.title)
             }
-            Step.action(.doneEditing(editedStandup))
+            Step.action(.completeEdit(editedStandup))
                 .expectState(\.standup, editedStandup)
                 .expectOutput(.standupEdited(editedStandup))
                 .expectEmptyRoute()

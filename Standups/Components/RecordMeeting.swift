@@ -395,7 +395,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
             Step.dependency(\.speechClient.authorizationStatus, { .denied })
             Step.dependency(\.continuousClock, TestClock())
             Step.dependency(\.soundEffectClient.play, { soundEffectPlayCount.withValue { $0 += 1 } })
-            Step.appear(await: false)
+            Step.appear()
                 .expectState {
                     $0.speakerIndex = 0
                     $0.secondsElapsed = 0
@@ -419,7 +419,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
         Test("record transcript", stateName: "quick") {
             Step.dependency(\.speechClient, .string("hello"))
             Step.dependency(\.continuousClock, TestClock())
-            Step.appear(await: false)
+            Step.appear()
             Step.advanceClock(.seconds(1))
                 .expectState(\.secondsElapsed, 1)
                 .expectState(\.speakerIndex, 1)
@@ -432,7 +432,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
         Test("end meeting", stateName: "default") {
             Step.dependency(\.speechClient.authorizationStatus, { .denied })
             Step.dependency(\.continuousClock, TestClock())
-            Step.appear(await: false)
+            Step.appear()
             Step.action(.endMeeting)
                 .expectState(\.alert, .endMeeting(isDiscardable: true))
             Step.advanceClock(.seconds(10))
@@ -457,7 +457,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
             Step.dependency(\.speechClient, .string("hello"))
             Step.dependency(\.continuousClock, TestClock())
             Step.dependency(\.soundEffectClient.play, { soundEffectPlayCount.withValue { $0 += 1 } })
-            Step.appear(await: false)
+            Step.appear()
                 .expectState {
                     $0.speakerIndex = 0
                     $0.secondsElapsed = 0
@@ -491,7 +491,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
         Test("speech failure", stateName: "quick", assertions: []) {
             Step.dependency(\.speechClient, .string("I completed the project", fail: true))
             Step.dependency(\.continuousClock, TestClock())
-            Step.appear(await: false)
+            Step.appear()
             Step.advanceClock()
                 .expectState(\.alert, .speechRecognizerFailed)
                 .expectState(\.transcript, "I completed the project ❌")
