@@ -123,8 +123,11 @@ struct StandupFormComponent: Component, PreviewProvider {
     }
 
     static var states: States {
-        State("focus attendee") {
+        State("filled") {
             .init(focus: .attendee(Standup.mock.attendees[3].id), standup: .mock)
+        }
+        State("empty") {
+            .init(standup: .init(id: "1"))
         }
     }
 
@@ -146,6 +149,7 @@ struct StandupFormComponent: Component, PreviewProvider {
         Test("add attendee", state: .init(standup: .init(id: .init(), title: "Engineering"))) {
             Step.dependency(\.uuid, .incrementing)
             Step.appear()
+                .expectState(\.standup.attendees, [.init(id: "0")])
             Step.action(.addAttendee)
                 .expectState {
                     $0.standup.attendees =

@@ -8,6 +8,7 @@ struct StandupsListModel: ComponentModel {
 
     struct State {
         var standups: IdentifiedArrayOf<Standup> = []
+        var loaded = false
         var alert: AlertState<AlertAction>?
     }
 
@@ -34,14 +35,16 @@ struct StandupsListModel: ComponentModel {
 
     func connect(route: Route, store: Store) -> Connection {
         switch route {
-            case .detail(let route):
-                return store.connect(route, output: Input.detail)
-            case .add(let route):
-                return store.connect(route)
+        case .detail(let route):
+            return store.connect(route, output: Input.detail)
+        case .add(let route):
+            return store.connect(route)
         }
     }
 
     func appear(store: Store) async {
+        guard !store.loaded else { return }
+
         do {
             store.standups = try JSONDecoder().decode(
                 IdentifiedArray.self,
@@ -52,59 +55,60 @@ struct StandupsListModel: ComponentModel {
         } catch {
 
         }
-
-        store.statePublisher(\.standups)
-            .debounce(for: .seconds(1), scheduler: store.dependencies.mainQueue)
-            .sink { standups in
-                try? store.dependencies.dataManager.save(JSONEncoder().encode(standups), .standups)
-            }
-            .store(in: &store.cancellables)
+        store.loaded = true
     }
 
     func handle(action: Action, store: Store) async {
         switch action {
-            case .addStandup:
-                store.route(to: Route.add, state: .init(standup: Standup(id: .init(store.dependencies.uuid()))))
-            case .dismissAddStandup:
-                store.dismissRoute()
-            case .confirmAddStandup(let standup):
-                var standup = standup
-                standup.attendees.removeAll { attendee in
-                    attendee.name.allSatisfy(\.isWhitespace)
+        case .addStandup:
+            store.route(to: Route.add, state: .init(standup: Standup(id: .init(store.dependencies.uuid()))))
+        case .dismissAddStandup:
+            store.dismissRoute()
+        case .confirmAddStandup(let standup):
+            var standup = standup
+            standup.attendees.removeAll { attendee in
+                attendee.name.allSatisfy(\.isWhitespace)
+            }
+            if standup.attendees.isEmpty {
+                standup.attendees.append(Attendee(id: Attendee.ID(store.dependencies.uuid())))
+            }
+            store.standups.append(standup)
+            store.dismissRoute()
+            saveStandups(store)
+        case .standupTapped(let standup):
+            store.route(to: Route.detail, state: .init(standup: standup))
+        case .alertButton(let action):
+            switch action {
+            case .confirmLoadMockData:
+                withAnimation {
+                    store.standups = [
+                        .mock,
+                        .designMock,
+                        .engineeringMock,
+                    ]
                 }
-                if standup.attendees.isEmpty {
-                    standup.attendees.append(Attendee(id: Attendee.ID(store.dependencies.uuid())))
-                }
-                store.standups.append(standup)
-                store.dismissRoute()
-            case .standupTapped(let standup):
-                store.route(to: Route.detail, state: .init(standup: standup))
-            case .alertButton(let action):
-                switch action {
-                    case .confirmLoadMockData:
-                        withAnimation {
-                            store.standups = [
-                                .mock,
-                                .designMock,
-                                .engineeringMock,
-                            ]
-                        }
-                    case .none:
-                        break
-                }
+            case .none:
+                break
+            }
         }
+    }
+
+    func saveStandups(_ store: Store) {
+        try? store.dependencies.dataManager.save(JSONEncoder().encode(store.standups), .standups)
     }
 
     func handle(input: Input, store: Store) async {
         switch input {
-            case .detail(.standupDeleted(let standup)):
-                withAnimation {
-                    store.standups.remove(id: standup)
-                    store.dismissRoute()
-                }
-            case .detail(.standupEdited(let standup)):
-                store.standups[id: standup.id] = standup
+        case .detail(.standupDeleted(let standup)):
+            withAnimation {
+                store.standups.remove(id: standup)
                 store.dismissRoute()
+                saveStandups(store)
+            }
+        case .detail(.standupEdited(let standup)):
+            store.standups[id: standup.id] = standup
+            store.dismissRoute()
+            saveStandups(store)
         }
     }
 }
@@ -133,34 +137,34 @@ struct StandupsList: ComponentView {
 
     func presentation(for route: StandupsListModel.Route) -> Presentation {
         switch route {
-            case .add:
-                return .sheet
-            case .detail:
-                return .push
+        case .add:
+            return .sheet
+        case .detail:
+            return .push
         }
     }
 
     func routeView(_ route: StandupsListModel.Route) -> some View {
         switch route {
-            case .add(let route):
-                NavigationStack {
-                    StandupFormView(model: route.viewModel)
-                        .navigationTitle("New standup")
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("Dismiss") {
-                                    model.send(.dismissAddStandup)
-                                }
-                            }
-                            ToolbarItem(placement: .confirmationAction) {
-                                Button("Add") {
-                                    model.send(.confirmAddStandup(route.viewModel.state.standup))
-                                }
+        case .add(let route):
+            NavigationStack {
+                StandupFormView(model: route.viewModel)
+                    .navigationTitle("New standup")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Dismiss") {
+                                model.send(.dismissAddStandup)
                             }
                         }
-                }
-            case .detail(let route):
-                StandupDetailView(model: route.viewModel)
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Add") {
+                                model.send(.confirmAddStandup(route.viewModel.state.standup))
+                            }
+                        }
+                    }
+            }
+        case .detail(let route):
+            StandupDetailView(model: route.viewModel)
         }
     }
 
@@ -289,7 +293,7 @@ struct StandupsListComponent: Component, PreviewProvider {
                 }
         }
 
-        Test("Select", state: Model.State(standups: [.mock, .designMock]), assertions: .all) {
+        Test("Select", state: Model.State(standups: [.mock, .designMock])) {
             Step.action(.standupTapped(.designMock))
                 .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
             Step.fork("Delete") {

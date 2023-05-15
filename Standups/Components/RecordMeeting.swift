@@ -395,7 +395,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
             Step.dependency(\.speechClient.authorizationStatus, { .denied })
             Step.dependency(\.continuousClock, TestClock())
             Step.dependency(\.soundEffectClient.play, { soundEffectPlayCount.withValue { $0 += 1 } })
-            Step.appear()
+            Step.appear(await: false)
                 .expectState {
                     $0.speakerIndex = 0
                     $0.secondsElapsed = 0
@@ -419,7 +419,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
         Test("record transcript", stateName: "quick") {
             Step.dependency(\.speechClient, .string("hello"))
             Step.dependency(\.continuousClock, TestClock())
-            Step.appear()
+            Step.appear(await: false)
             Step.advanceClock(.seconds(1))
                 .expectState(\.secondsElapsed, 1)
                 .expectState(\.speakerIndex, 1)
@@ -432,7 +432,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
         Test("end meeting", stateName: "default") {
             Step.dependency(\.speechClient.authorizationStatus, { .denied })
             Step.dependency(\.continuousClock, TestClock())
-            Step.appear()
+            Step.appear(await: false)
             Step.action(.endMeeting)
                 .expectState(\.alert, .endMeeting(isDiscardable: true))
             Step.advanceClock(.seconds(10))
@@ -457,29 +457,23 @@ struct RecordMeetingComponent: Component, PreviewProvider {
             Step.dependency(\.speechClient, .string("hello"))
             Step.dependency(\.continuousClock, TestClock())
             Step.dependency(\.soundEffectClient.play, { soundEffectPlayCount.withValue { $0 += 1 } })
-            Step.appear()
-                .expectState {
-                    $0.speakerIndex = 0
-                    $0.secondsElapsed = 0
-                }
+            Step.appear(await: false)
+                .expectState(\.speakerIndex, 0)
+                .expectState(\.secondsElapsed, 0)
                 .validateState("sound played") { _ in
                     soundEffectPlayCount.value == 0
                 }
             Step.action(.nextSpeaker)
-                .expectState {
-                    $0.speakerIndex = 1
-                    $0.secondsElapsed = 1
-                }
+                .expectState(\.speakerIndex, 1)
+                .expectState(\.secondsElapsed, 1)
                 .validateState("sound played") { _ in
                     soundEffectPlayCount.value == 1
                 }
             Step.action(.nextSpeaker)
                 .expectState(\.alert, .endMeeting(isDiscardable: false))
             Step.advanceClock()
-                .expectState {
-                    $0.speakerIndex = 1
-                    $0.secondsElapsed = 1
-                }
+                .expectState(\.speakerIndex, 1)
+                .expectState(\.secondsElapsed, 1)
                 .validateState("sound played") { _ in
                     // no sound played
                     soundEffectPlayCount.value == 1
@@ -491,7 +485,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
         Test("speech failure", stateName: "quick", assertions: []) {
             Step.dependency(\.speechClient, .string("I completed the project", fail: true))
             Step.dependency(\.continuousClock, TestClock())
-            Step.appear()
+            Step.appear(await: false)
             Step.advanceClock()
                 .expectState(\.alert, .speechRecognizerFailed)
                 .expectState(\.transcript, "I completed the project ❌")

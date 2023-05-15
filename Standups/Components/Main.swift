@@ -61,11 +61,11 @@ struct MainComponent: Component, PreviewProvider {
                     Step.action(.completeEdit(editedStandup))
                     Step.action(.startMeeting)
                     Step.route(/StandupDetailModel.Route.record) {
-                        Step.dependency(\.speechClient, .string("hello"))
-                        Step.appear()
+                        Step.appear(await: false)
                         Step.binding(\.transcript, "Hello")
                         Step.action(.endMeeting)
                         Step.action(.alertButton(.confirmSave))
+                        Step.disappear()
                     }
                 }
             }
