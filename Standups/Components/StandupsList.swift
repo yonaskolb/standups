@@ -284,6 +284,10 @@ struct StandupsListComponent: Component, PreviewProvider {
             Step.appear()
             Step.action(.addStandup)
                 .expectRoute(/Model.Route.add, state: .init(standup: standup))
+            Step.fork("dismiss") {
+                Step.action(.dismissAddStandup)
+                    .expectEmptyRoute()
+            }
             Step.action(.confirmAddStandup(addedStandupWithExtra))
                 .expectEmptyRoute()
                 .expectState(\.standups, [addedStandup])

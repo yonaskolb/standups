@@ -45,8 +45,6 @@ struct RecordMeetingModel: ComponentModel {
         case nextSpeaker
         case endMeeting
         case alertButton(AlertAction?)
-        case finishMeeting
-
     }
 
     func appear(store: Store) async {
@@ -93,8 +91,6 @@ struct RecordMeetingModel: ComponentModel {
                     case .none: break
                 }
                 store.alert = nil
-            case .finishMeeting:
-                finishMeeting(store: store)
         }
     }
 

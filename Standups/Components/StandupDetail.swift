@@ -374,6 +374,10 @@ struct StandupDetailComponent: Component, PreviewProvider {
         Test("edit", state: .init(standup: standup)) {
             Step.action(.edit)
                 .expectRoute(/Model.Route.edit, state: .init(standup: standup))
+            Step.fork("cancel") {
+                Step.action(.cancelEdit)
+                    .expectEmptyRoute()
+            }
             Step.route(/Model.Route.edit) {
                 Step.binding(\.standup.title, editedStandup.title)
             }
@@ -387,7 +391,18 @@ struct StandupDetailComponent: Component, PreviewProvider {
             Step.action(.delete)
                 .expectState(\.alert, .deleteStandup)
             Step.action(.alertButton(.confirmDeletion))
+                .expectState(\.alert, nil)
                 .expectOutput(.standupDeleted(Standup.mock.id))
+        }
+
+        Test("delete meetings", stateName: "default") {
+            Step.action(.deleteMeetings(.init(integer: 0)))
+                .expectState(\.standup.meetings, [])
+        }
+
+        Test("select meeting", stateName: "default") {
+            Step.action(.selectMeeting(.mock))
+                .expectRoute(/Model.Route.meeting, state: .init(meeting: .mock, standup: .mock))
         }
     }
 
