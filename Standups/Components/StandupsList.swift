@@ -284,7 +284,7 @@ struct StandupsListComponent: Component, PreviewProvider {
             Step.appear()
             Step.action(.addStandup)
                 .expectRoute(/Model.Route.add, state: .init(standup: standup))
-            Step.fork("dismiss") {
+            Step.branch("dismiss") {
                 Step.action(.dismissAddStandup)
                     .expectEmptyRoute()
             }
@@ -300,12 +300,12 @@ struct StandupsListComponent: Component, PreviewProvider {
         Test("Select", state: .init(standups: [.mock, .designMock])) {
             Step.action(.selectStandup(.designMock))
                 .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
-            Step.fork("Delete") {
+            Step.branch("Delete") {
                 Step.route(/Model.Route.detail, output: .standupDeleted(Standup.designMock.id))
                     .expectEmptyRoute()
                     .expectState(\.standups, [.mock])
             }
-            Step.fork("Edit") {
+            Step.branch("Edit") {
                 let editedStandup: Standup = {
                     var standup = Standup.designMock
                     standup.title = "Engineering"
@@ -319,12 +319,12 @@ struct StandupsListComponent: Component, PreviewProvider {
         }
 
         Test("Load", state: .init()) {
-            Step.fork("load failure") {
+            Step.branch("load failure") {
                 Step.dependency(\.dataManager, .failToLoad)
                 Step.appear()
                     .expectState(\.alert, nil)
             }
-            Step.fork("decoding failure") {
+            Step.branch("decoding failure") {
                 Step.dependency(\.dataManager, .failToDecode)
                 Step.appear()
                     .expectState(\.alert, .dataFailedToLoad)
@@ -332,7 +332,7 @@ struct StandupsListComponent: Component, PreviewProvider {
                     .expectState(\.standups, [.mock, .designMock, .engineeringMock])
                 Step.binding(\.alert, nil)
             }
-            Step.fork("successful") {
+            Step.branch("successful") {
                 Step.dependency(\.dataManager, .mockStandups([.mock, .designMock]))
                 Step.appear()
                     .expectState(\.standups, [.mock, .designMock])

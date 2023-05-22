@@ -304,11 +304,11 @@ struct StandupDetailComponent: Component, PreviewProvider {
             Step.dependency(\.speechClient.authorizationStatus, { .restricted })
             Step.action(.startMeeting)
                 .expectState(\.alert, .speechRecognitionRestricted)
-            Step.fork("cancel") {
+            Step.branch("cancel") {
                 Step.binding(\.alert, .none)
                     .expectState(\.alert, .none)
             }
-            Step.fork("continue") {
+            Step.branch("continue") {
                 Step.action(.alertButton(.continueWithoutRecording))
                     .expectRoute(/Model.Route.record, state: .init(standup: .mock))
                     .expectState(\.alert, .none)
@@ -319,14 +319,14 @@ struct StandupDetailComponent: Component, PreviewProvider {
             Step.dependency(\.speechClient.authorizationStatus, { .denied })
             Step.action(.startMeeting)
                 .expectState(\.alert, .speechRecognitionDenied)
-            Step.fork("continue") {
+            Step.branch("continue") {
                 Step.action(.alertButton(.continueWithoutRecording))
                     .expectState(\.alert, .none)
                     .expectRoute(/Model.Route.record, state: .init(standup: .mock))
                 Step.input(.record(.dismiss))
                     .expectEmptyRoute()
             }
-            Step.fork("open settings") {
+            Step.branch("open settings") {
                 let settingsOpened = LockIsolated(false)
                 Step.dependency(\.openSettings, { settingsOpened.setValue(true) })
                 Step.action(.alertButton(.openSettings))
@@ -335,7 +335,7 @@ struct StandupDetailComponent: Component, PreviewProvider {
                     }
                     .expectState(\.alert, .none)
             }
-            Step.fork("cancel") {
+            Step.branch("cancel") {
                 Step.binding(\.alert, .none)
                     .expectState(\.alert, .none)
             }
@@ -374,7 +374,7 @@ struct StandupDetailComponent: Component, PreviewProvider {
         Test("edit", state: .init(standup: standup)) {
             Step.action(.edit)
                 .expectRoute(/Model.Route.edit, state: .init(standup: standup))
-            Step.fork("cancel") {
+            Step.branch("cancel") {
                 Step.action(.cancelEdit)
                     .expectEmptyRoute()
             }

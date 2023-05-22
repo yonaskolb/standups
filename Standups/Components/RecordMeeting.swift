@@ -429,12 +429,12 @@ struct RecordMeetingComponent: Component, PreviewProvider {
                     $0.secondsElapsed = 0
                     $0.speakerIndex = 0
                 }
-            Step.fork("save") {
+            Step.branch("save") {
                 Step.action(.alertButton(.confirmSave))
                     .expectOutput(.meetingFinished(transcript: ""))
                     .expectState(\.alert, .none)
             }
-            Step.fork("discard") {
+            Step.branch("discard") {
                 Step.action(.alertButton(.confirmDiscard))
                     .expectOutput(.dismiss)
             }
@@ -477,13 +477,13 @@ struct RecordMeetingComponent: Component, PreviewProvider {
             Step.advanceClock()
                 .expectState(\.alert, .speechRecognizerFailed)
                 .expectState(\.transcript, "I completed the project ❌")
-            Step.fork("continue") {
+            Step.branch("continue") {
                 Step.action(.alertButton(.none))
                     .expectState(\.alert, .none)
                 Step.advanceClock(.seconds(60))
                     .expectOutput(.meetingFinished(transcript: "I completed the project ❌"))
             }
-            Step.fork("discard") {
+            Step.branch("discard") {
                 Step.action(.alertButton(.confirmDiscard))
                     .expectState(\.alert, .none)
                     .expectOutput(.dismiss)
