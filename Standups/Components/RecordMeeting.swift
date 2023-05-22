@@ -21,14 +21,6 @@ struct RecordMeetingModel: ComponentModel {
         var isAlertOpen: Bool {
             alert != nil
         }
-
-        init(
-            alert: AlertState<AlertAction>? = nil,
-            standup: Standup
-        ) {
-            self.alert = alert
-            self.standup = standup
-        }
     }
 
     enum Output {
@@ -381,7 +373,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
             ))
         }
         State("failed speech") {
-            .init(alert: .speechRecognizerFailed, standup: .mock)
+            .init(standup: .mock, alert: .speechRecognizerFailed)
         }
     }
 

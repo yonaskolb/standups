@@ -50,7 +50,7 @@ struct MainComponent: Component, PreviewProvider {
                 }
                 let createdStandup = Standup(id: "0", title: "Engineering")
                 Step.action(.confirmAddStandup(createdStandup))
-                Step.action(.standupTapped(createdStandup))
+                Step.action(.selectStandup(createdStandup))
                     .expectRoute(/StandupsListModel.Route.detail, state: .init(standup: createdStandup))
                 Step.route(/StandupsListModel.Route.detail) {
                     Step.action(.edit)

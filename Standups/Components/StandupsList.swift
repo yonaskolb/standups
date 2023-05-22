@@ -25,7 +25,7 @@ struct StandupsListModel: ComponentModel {
         case addStandup
         case dismissAddStandup
         case confirmAddStandup(Standup)
-        case standupTapped(Standup)
+        case selectStandup(Standup)
         case alertButton(AlertAction?)
     }
 
@@ -75,7 +75,7 @@ struct StandupsListModel: ComponentModel {
             store.standups.append(standup)
             store.dismissRoute()
             saveStandups(store)
-        case .standupTapped(let standup):
+        case .selectStandup(let standup):
             store.route(to: Route.detail, state: .init(standup: standup))
         case .alertButton(let action):
             switch action {
@@ -171,7 +171,7 @@ struct StandupsList: ComponentView {
     var view: some View {
         List {
             ForEach(model.standups) { standup in
-                model.button(.standupTapped(standup)) {
+                model.button(.selectStandup(standup)) {
                     CardView(standup: standup)
                 }
                 .listRowBackground(standup.theme.mainColor)
@@ -297,8 +297,8 @@ struct StandupsListComponent: Component, PreviewProvider {
                 }
         }
 
-        Test("Select", state: Model.State(standups: [.mock, .designMock])) {
-            Step.action(.standupTapped(.designMock))
+        Test("Select", state: .init(standups: [.mock, .designMock])) {
+            Step.action(.selectStandup(.designMock))
                 .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
             Step.fork("Delete") {
                 Step.route(/Model.Route.detail, output: .standupDeleted(Standup.designMock.id))
