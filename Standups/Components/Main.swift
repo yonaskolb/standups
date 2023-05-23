@@ -67,6 +67,8 @@ struct MainComponent: Component, PreviewProvider {
                         Step.action(.alertButton(.confirmSave))
                         Step.disappear()
                     }
+                    Step.action(.selectMeeting(.mock))
+                    Step.dismissRoute()
                 }
             }
         }
