@@ -122,7 +122,7 @@ struct StandupDetailView: ComponentView {
 
     @ObservedObject var model: ViewModel<StandupDetailModel>
 
-    func presentation(for route: StandupDetailModel.Route) -> Presentation {
+    func presentation(route: StandupDetailModel.Route) -> Presentation {
         switch route {
             case .edit: return .sheet
             case .meeting: return .push
@@ -130,7 +130,7 @@ struct StandupDetailView: ComponentView {
         }
     }
 
-    func routeView(_ route: StandupDetailModel.Route) -> some View {
+    func view(route: StandupDetailModel.Route) -> some View {
         switch route {
             case .edit(let route):
                 NavigationView {

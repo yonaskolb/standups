@@ -135,7 +135,7 @@ extension AlertState where Action == StandupsListModel.AlertAction {
 struct StandupsList: ComponentView {
     @ObservedObject var model: ViewModel<StandupsListModel>
 
-    func presentation(for route: StandupsListModel.Route) -> Presentation {
+    func presentation(route: StandupsListModel.Route) -> Presentation {
         switch route {
         case .add:
             return .sheet
@@ -144,7 +144,7 @@ struct StandupsList: ComponentView {
         }
     }
 
-    func routeView(_ route: StandupsListModel.Route) -> some View {
+    func view(route: StandupsListModel.Route) -> some View {
         switch route {
         case .add(let route):
             NavigationStack {
