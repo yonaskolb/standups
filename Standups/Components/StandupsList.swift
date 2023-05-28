@@ -148,7 +148,7 @@ struct StandupsList: ComponentView {
         switch route {
         case .add(let route):
             NavigationStack {
-                StandupFormView(model: route.viewModel)
+                StandupFormView(model: route.model)
                     .navigationTitle("New standup")
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
@@ -158,13 +158,13 @@ struct StandupsList: ComponentView {
                         }
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Add") {
-                                model.send(.confirmAddStandup(route.viewModel.state.standup))
+                                model.send(.confirmAddStandup(route.model.state.standup))
                             }
                         }
                     }
             }
         case .detail(let route):
-            StandupDetailView(model: route.viewModel)
+            StandupDetailView(model: route.model)
         }
     }
 

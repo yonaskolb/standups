@@ -134,23 +134,23 @@ struct StandupDetailView: ComponentView {
         switch route {
             case .edit(let route):
                 NavigationView {
-                    StandupFormView(model: route.viewModel)
+                    StandupFormView(model: route.model)
                         .navigationTitle(model.standup.title)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
                                 model.button(.cancelEdit, "Cancel")
                             }
                             ToolbarItem(placement: .confirmationAction) {
-                                model.button(.completeEdit(route.viewModel.state.standup), "Done")
+                                model.button(.completeEdit(route.model.state.standup), "Done")
                             }
                         }
                 }
             case .record(let route):
                 NavigationView {
-                    RecordMeetingView(model: route.viewModel)
+                    RecordMeetingView(model: route.model)
                 }
             case .meeting(let route):
-                MeetingView(model: route.viewModel)
+                MeetingView(model: route.model)
         }
     }
 
