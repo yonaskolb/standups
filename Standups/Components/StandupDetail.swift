@@ -44,76 +44,76 @@ struct StandupDetailModel: ComponentModel {
         case openSettings
     }
 
-    func connect(route: Route, store: Store) -> Connection {
+    func connect(route: Route, model: Model) -> Connection {
         switch route {
             case .record(let route):
-                return store.connect(route, output: Input.record)
+                return model.connect(route, output: Input.record)
             case .edit(let route):
-                return store.connect(route)
+                return model.connect(route)
             case .meeting(let route):
-                return store.connect(route)
+                return model.connect(route)
         }
     }
 
-    func handle(action: Action, store: Store) async {
+    func handle(action: Action, model: Model) async {
         switch action {
             case .delete:
-                store.alert = .deleteStandup
+                model.alert = .deleteStandup
             case .edit:
-                store.route(to: Route.edit, state: .init(standup: store.standup))
+                model.route(to: Route.edit, state: .init(standup: model.standup))
             case .cancelEdit:
-                store.dismissRoute()
+                model.dismissRoute()
             case .selectMeeting(let meeting):
-                store.route(to: Route.meeting, state: .init(meeting: meeting, standup: store.standup))
+                model.route(to: Route.meeting, state: .init(meeting: meeting, standup: model.standup))
             case .deleteMeetings(let indices):
-                store.standup.meetings.remove(atOffsets: indices)
+                model.standup.meetings.remove(atOffsets: indices)
             case .startMeeting:
-                switch store.dependencies.speechClient.authorizationStatus() {
+                switch model.dependencies.speechClient.authorizationStatus() {
                     case .notDetermined, .authorized:
-                        store.route(to: Route.record, state: .init(standup: store.standup))
+                        model.route(to: Route.record, state: .init(standup: model.standup))
                     case .denied:
-                        store.alert = .speechRecognitionDenied
+                        model.alert = .speechRecognitionDenied
                     case .restricted:
-                        store.alert = .speechRecognitionRestricted
+                        model.alert = .speechRecognitionRestricted
                     @unknown default:
                         break
                 }
             case .alertButton(let action):
-                store.alert = nil
+                model.alert = nil
                 switch action {
                     case .confirmDeletion?:
-                        store.output(.standupDeleted(store.standup.id))
+                        model.output(.standupDeleted(model.standup.id))
                     case .continueWithoutRecording?:
-                        store.route(to: Route.record, state: .init(standup: store.standup))
+                        model.route(to: Route.record, state: .init(standup: model.standup))
                     case .openSettings?:
-                        await store.dependencies.openSettings()
+                        await model.dependencies.openSettings()
                     case nil:
                         break
                 }
             case .completeEdit(let standup):
-                store.standup = standup
-                store.dismissRoute()
-                store.output(.standupEdited(standup))
+                model.standup = standup
+                model.dismissRoute()
+                model.output(.standupEdited(standup))
         }
     }
 
-    func handle(input: Input, store: Store) async {
+    func handle(input: Input, model: Model) async {
         switch input {
             case .record(.meetingFinished(let transcript)):
-                store.dismissRoute()
-                let didCancel = (try? await store.dependencies.continuousClock.sleep(for: .milliseconds(400))) == nil
+                model.dismissRoute()
+                let didCancel = (try? await model.dependencies.continuousClock.sleep(for: .milliseconds(400))) == nil
                 withAnimation(didCancel ? nil : .default) {
-                    store.standup.meetings.insert(
+                    model.standup.meetings.insert(
                         Meeting(
-                            id: Meeting.ID(store.dependencies.uuid()),
-                            date: store.dependencies.date(),
+                            id: Meeting.ID(model.dependencies.uuid()),
+                            date: model.dependencies.date(),
                             transcript: transcript
                         ),
                         at: 0
                     )
                 }
             case .record(.dismiss):
-                store.dismissRoute()
+                model.dismissRoute()
         }
     }
 }

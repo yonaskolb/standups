@@ -33,55 +33,55 @@ struct StandupsListModel: ComponentModel {
         case detail(StandupDetailModel.Output)
     }
 
-    func connect(route: Route, store: Store) -> Connection {
+    func connect(route: Route, model: Model) -> Connection {
         switch route {
         case .detail(let route):
-            return store.connect(route, output: Input.detail)
+            return model.connect(route, output: Input.detail)
         case .add(let route):
-            return store.connect(route)
+            return model.connect(route)
         }
     }
 
-    func appear(store: Store) async {
-        guard !store.loaded else { return }
+    func appear(model: Model) async {
+        guard !model.loaded else { return }
 
         do {
-            store.standups = try JSONDecoder().decode(
+            model.standups = try JSONDecoder().decode(
                 IdentifiedArray.self,
-                from: store.dependencies.dataManager.load(.standups)
+                from: model.dependencies.dataManager.load(.standups)
             )
         } catch is DecodingError {
-            store.alert = .dataFailedToLoad
+            model.alert = .dataFailedToLoad
         } catch {
 
         }
-        store.loaded = true
+        model.loaded = true
     }
 
-    func handle(action: Action, store: Store) async {
+    func handle(action: Action, model: Model) async {
         switch action {
         case .addStandup:
-            store.route(to: Route.add, state: .init(standup: Standup(id: .init(store.dependencies.uuid()))))
+            model.route(to: Route.add, state: .init(standup: Standup(id: .init(model.dependencies.uuid()))))
         case .dismissAddStandup:
-            store.dismissRoute()
+            model.dismissRoute()
         case .confirmAddStandup(let standup):
             var standup = standup
             standup.attendees.removeAll { attendee in
                 attendee.name.allSatisfy(\.isWhitespace)
             }
             if standup.attendees.isEmpty {
-                standup.attendees.append(Attendee(id: Attendee.ID(store.dependencies.uuid())))
+                standup.attendees.append(Attendee(id: Attendee.ID(model.dependencies.uuid())))
             }
-            store.standups.append(standup)
-            store.dismissRoute()
-            saveStandups(store)
+            model.standups.append(standup)
+            model.dismissRoute()
+            saveStandups(model)
         case .selectStandup(let standup):
-            store.route(to: Route.detail, state: .init(standup: standup))
+            model.route(to: Route.detail, state: .init(standup: standup))
         case .alertButton(let action):
             switch action {
             case .confirmLoadMockData:
                 withAnimation {
-                    store.standups = [
+                    model.standups = [
                         .mock,
                         .designMock,
                         .engineeringMock,
@@ -93,22 +93,22 @@ struct StandupsListModel: ComponentModel {
         }
     }
 
-    func saveStandups(_ store: Store) {
-        try? store.dependencies.dataManager.save(JSONEncoder().encode(store.standups), .standups)
+    func saveStandups(_ model: Model) {
+        try? model.dependencies.dataManager.save(JSONEncoder().encode(model.standups), .standups)
     }
 
-    func handle(input: Input, store: Store) async {
+    func handle(input: Input, model: Model) async {
         switch input {
         case .detail(.standupDeleted(let standup)):
             withAnimation {
-                store.standups.remove(id: standup)
-                store.dismissRoute()
-                saveStandups(store)
+                model.standups.remove(id: standup)
+                model.dismissRoute()
+                saveStandups(model)
             }
         case .detail(.standupEdited(let standup)):
-            store.standups[id: standup.id] = standup
-            store.dismissRoute()
-            saveStandups(store)
+            model.standups[id: standup.id] = standup
+            model.dismissRoute()
+            saveStandups(model)
         }
     }
 }

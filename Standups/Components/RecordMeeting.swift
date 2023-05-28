@@ -39,84 +39,84 @@ struct RecordMeetingModel: ComponentModel {
         case alertButton(AlertAction?)
     }
 
-    func appear(store: Store) async {
+    func appear(model: Model) async {
 
-        store.dependencies.soundEffectClient.load("ding.wav")
+        model.dependencies.soundEffectClient.load("ding.wav")
 
         let authorization =
-        await store.dependencies.speechClient.authorizationStatus() == .notDetermined
-        ? store.dependencies.speechClient.requestAuthorization()
-        : store.dependencies.speechClient.authorizationStatus()
+        await model.dependencies.speechClient.authorizationStatus() == .notDetermined
+        ? model.dependencies.speechClient.requestAuthorization()
+        : model.dependencies.speechClient.authorizationStatus()
 
         await withTaskGroup(of: Void.self) { group in
             if authorization == .authorized {
                 group.addTask {
-                    await self.startSpeechRecognition(store: store)
+                    await self.startSpeechRecognition(model: model)
                 }
             }
             group.addTask {
-                await self.startTimer(store: store)
+                await self.startTimer(model: model)
             }
         }
     }
 
-    func handle(action: Action, store: Store) async {
+    func handle(action: Action, model: Model) async {
         switch action {
             case .nextSpeaker:
-                guard store.speakerIndex < store.standup.attendees.count - 1
+                guard model.speakerIndex < model.standup.attendees.count - 1
                 else {
-                    store.alert = .endMeeting(isDiscardable: false)
+                    model.alert = .endMeeting(isDiscardable: false)
                     return
                 }
 
-                store.dependencies.soundEffectClient.play()
-                store.speakerIndex += 1
-                store.secondsElapsed = store.speakerIndex * Int(store.standup.durationPerAttendee.components.seconds)
+                model.dependencies.soundEffectClient.play()
+                model.speakerIndex += 1
+                model.secondsElapsed = model.speakerIndex * Int(model.standup.durationPerAttendee.components.seconds)
             case .endMeeting:
-                store.alert = .endMeeting(isDiscardable: true)
+                model.alert = .endMeeting(isDiscardable: true)
             case .alertButton(let action):
                 switch action {
                     case .confirmSave?:
-                        finishMeeting(store: store)
+                        finishMeeting(model: model)
                     case .confirmDiscard?:
-                        store.output(.dismiss)
+                        model.output(.dismiss)
                     case .none: break
                 }
-                store.alert = nil
+                model.alert = nil
         }
     }
 
-    private func finishMeeting(store: Store) {
-        store.output(.meetingFinished(transcript: store.transcript))
+    private func finishMeeting(model: Model) {
+        model.output(.meetingFinished(transcript: model.transcript))
     }
 
-    private func startSpeechRecognition(store: Store) async {
+    private func startSpeechRecognition(model: Model) async {
         do {
-            let speechTask = await store.dependencies.speechClient.startTask(SFSpeechAudioBufferRecognitionRequest())
+            let speechTask = await model.dependencies.speechClient.startTask(SFSpeechAudioBufferRecognitionRequest())
             for try await result in speechTask {
-                store.transcript = result.bestTranscription.formattedString
+                model.transcript = result.bestTranscription.formattedString
             }
         } catch {
-            if !store.transcript.isEmpty {
-                store.transcript += " ❌"
+            if !model.transcript.isEmpty {
+                model.transcript += " ❌"
             }
-            store.alert = .speechRecognizerFailed
+            model.alert = .speechRecognizerFailed
         }
     }
 
-    private func startTimer(store: Store) async {
-        for await _ in store.dependencies.continuousClock.timer(interval: .seconds(1)) where !store.state.isAlertOpen {
+    private func startTimer(model: Model) async {
+        for await _ in model.dependencies.continuousClock.timer(interval: .seconds(1)) where !model.state.isAlertOpen {
 
-            store.secondsElapsed += 1
+            model.secondsElapsed += 1
 
-            let secondsPerAttendee = Int(store.standup.durationPerAttendee.components.seconds)
-            if store.secondsElapsed.isMultiple(of: secondsPerAttendee) {
-                if store.speakerIndex == store.standup.attendees.count - 1 {
-                    finishMeeting(store: store)
+            let secondsPerAttendee = Int(model.standup.durationPerAttendee.components.seconds)
+            if model.secondsElapsed.isMultiple(of: secondsPerAttendee) {
+                if model.speakerIndex == model.standup.attendees.count - 1 {
+                    finishMeeting(model: model)
                     break
                 }
-                store.speakerIndex += 1
-                store.dependencies.soundEffectClient.play()
+                model.speakerIndex += 1
+                model.dependencies.soundEffectClient.play()
             }
         }
     }

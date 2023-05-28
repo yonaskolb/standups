@@ -20,30 +20,30 @@ struct StandupFormModel: ComponentModel {
         case addAttendee
     }
 
-    func appear(store: Store) async {
-        if store.standup.attendees.isEmpty {
-            store.standup.attendees.append(Attendee(id: Attendee.ID(store.dependencies.uuid())))
+    func appear(model: Model) async {
+        if model.standup.attendees.isEmpty {
+            model.standup.attendees.append(Attendee(id: Attendee.ID(model.dependencies.uuid())))
         }
     }
 
-    func handle(action: Action, store: Store) async {
+    func handle(action: Action, model: Model) async {
         switch action {
             case .addAttendee:
-                let attendee = Attendee(id: Attendee.ID(store.dependencies.uuid()))
-                store.standup.attendees.append(attendee)
-                store.focus = .attendee(attendee.id)
+                let attendee = Attendee(id: Attendee.ID(model.dependencies.uuid()))
+                model.standup.attendees.append(attendee)
+                model.focus = .attendee(attendee.id)
             case .deleteAttendees(let indices):
-                var attendees = store.standup.attendees
+                var attendees = model.standup.attendees
                 attendees.remove(atOffsets: indices)
                 if attendees.isEmpty {
-                    attendees.append(Attendee(id: Attendee.ID(store.dependencies.uuid())))
+                    attendees.append(Attendee(id: Attendee.ID(model.dependencies.uuid())))
                 }
-                store.standup.attendees = attendees
+                model.standup.attendees = attendees
 
                 guard let firstIndex = indices.first
                 else { return }
-                let index = min(firstIndex, store.standup.attendees.count - 1)
-                store.focus = .attendee(store.standup.attendees[index].id)
+                let index = min(firstIndex, model.standup.attendees.count - 1)
+                model.focus = .attendee(model.standup.attendees[index].id)
         }
     }
 }
@@ -180,36 +180,28 @@ struct StandupFormComponent: Component, PreviewProvider {
                     Attendee(id: "2"),
                     Attendee(id: "3"),
                 ])
-                .expectState {
-                    $0.focus = .attendee("1")
-                    $0.standup.attendees = [
-                        Attendee(id: "1"),
-                        Attendee(id: "2"),
-                        Attendee(id: "3"),
-                    ]
-                }
+                .expectState(\.focus, .attendee("1"))
+                .expectState(\.standup.attendees, [
+                    Attendee(id: "1"),
+                    Attendee(id: "2"),
+                    Attendee(id: "3"),
+                ])
             Step.action(.deleteAttendees([1]))
-                .expectState {
-                    $0.focus = .attendee("3")
-                    $0.standup.attendees = [
-                        Attendee(id: "1"),
-                        Attendee(id: "3"),
-                    ]
-                }
+                .expectState(\.focus, .attendee("3"))
+                .expectState(\.standup.attendees, [
+                    Attendee(id: "1"),
+                    Attendee(id: "3"),
+                ])
             Step.action(.deleteAttendees([1]))
-                .expectState {
-                    $0.focus = .attendee("1")
-                    $0.standup.attendees = [
-                        Attendee(id: "1"),
-                    ]
-                }
+                .expectState(\.focus, .attendee("1"))
+                .expectState(\.standup.attendees, [
+                    Attendee(id: "1"),
+                ])
             Step.action(.deleteAttendees([0]))
-                .expectState {
-                    $0.focus = .attendee("4")
-                    $0.standup.attendees = [
-                        Attendee(id: "4"),
-                    ]
-                }
+                .expectState(\.focus, .attendee("4"))
+                .expectState(\.standup.attendees, [
+                    Attendee(id: "4"),
+                ])
         }
     }
 }
