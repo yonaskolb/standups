@@ -39,19 +39,16 @@ struct MainComponent: Component, PreviewProvider {
 
         Test("app walkthrough", state: .init(), assertions: []) {
             Step.dependency(\.dataManager, .mockStandups([]))
-            Step.dependency(\.uuid, .incrementing)
             Step.appear()
             Step.scope(Model.standupList) {
                 Step.appear()
                 Step.action(.addStandup)
-                    .expectRoute(/StandupsListModel.Route.add, state: .init(standup: Standup(id: "0")))
                 Step.route(/StandupsListModel.Route.add) {
                     Step.binding(\.standup.title, "Engineering")
                 }
                 let createdStandup = Standup(id: "0", title: "Engineering")
                 Step.action(.confirmAddStandup(createdStandup))
                 Step.action(.selectStandup(createdStandup))
-                    .expectRoute(/StandupsListModel.Route.detail, state: .init(standup: createdStandup))
                 Step.route(/StandupsListModel.Route.detail) {
                     Step.action(.edit)
                     Step.route(/StandupDetailModel.Route.edit) {

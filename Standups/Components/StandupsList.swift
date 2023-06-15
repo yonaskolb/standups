@@ -262,7 +262,7 @@ struct StandupsListComponent: Component, PreviewProvider {
     }
 
     static var tests: Tests {
-        Test("Add", state: .init()) {
+        Test("add", state: .init()) {
             let mainQueue = DispatchQueue.test
             let standups = LockIsolated<[Standup]>([])
             let standup = Standup(id: "0")
@@ -288,24 +288,26 @@ struct StandupsListComponent: Component, PreviewProvider {
                 Step.action(.dismissAddStandup)
                     .expectEmptyRoute()
             }
-            Step.action(.confirmAddStandup(addedStandupWithExtra))
-                .expectEmptyRoute()
-                .expectState(\.standups, [addedStandup])
-            Step.run("Run main") { await mainQueue.run() }
-                .validateState("saved standup") {
-                    standups.value == $0.standups.elements
-                }
+            Step.branch("confirm") {
+                Step.action(.confirmAddStandup(addedStandupWithExtra))
+                    .expectEmptyRoute()
+                    .expectState(\.standups, [addedStandup])
+                Step.run("Run main") { await mainQueue.run() }
+                    .validateState("saved standup") {
+                        standups.value == $0.standups.elements
+                    }
+            }
         }
 
-        Test("Select", state: .init(standups: [.mock, .designMock])) {
+        Test("select", state: .init(standups: [.mock, .designMock])) {
             Step.action(.selectStandup(.designMock))
                 .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
-            Step.branch("Delete") {
+            Step.branch("delete") {
                 Step.route(/Model.Route.detail, output: .standupDeleted(Standup.designMock.id))
                     .expectEmptyRoute()
                     .expectState(\.standups, [.mock])
             }
-            Step.branch("Edit") {
+            Step.branch("edit") {
                 let editedStandup: Standup = {
                     var standup = Standup.designMock
                     standup.title = "Engineering"
@@ -318,7 +320,7 @@ struct StandupsListComponent: Component, PreviewProvider {
             }
         }
 
-        Test("Load", state: .init()) {
+        Test("load", state: .init()) {
             Step.branch("load failure") {
                 Step.dependency(\.dataManager, .failToLoad)
                 Step.appear()

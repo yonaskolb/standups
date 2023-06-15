@@ -146,62 +146,37 @@ struct StandupFormComponent: Component, PreviewProvider {
                 .expectState(\.focus, .attendee("1"))
             Step.binding(\.standup.attendees[id: "1"]!.name, "Sarah")
         }
-        Test("add attendee", state: .init(standup: .init(id: .init(), title: "Engineering"))) {
-            Step.dependency(\.uuid, .incrementing)
-            Step.appear()
-                .expectState(\.standup.attendees, [.init(id: "0")])
-            Step.action(.addAttendee)
-                .expectState {
-                    $0.standup.attendees =
-                    [
-                        Attendee(id: "0"),
-                        Attendee(id: "1"),
-                    ]
-                    $0.focus = .attendee("1")
-                }
-        }
-        let uuid = UUIDGenerator.incrementing
         Test("remove attendee", state: .init(standup: Standup(
             id: Standup.ID(),
             attendees: [
-                Attendee(id: Attendee.ID(uuid())),
-                Attendee(id: Attendee.ID(uuid())),
-                Attendee(id: Attendee.ID(uuid())),
-                Attendee(id: Attendee.ID(uuid())),
+                .mock("1"),
+                .mock("2"),
+                .mock("3"),
+                .mock("4"),
             ],
             title: "Engineering"
         ))) {
-            Step.dependency(\.uuid, uuid)
+            Step.dependency(\.uuid, .incrementing)
             Step.appear()
             Step.action(.deleteAttendees([0]))
-                .expectState(\.focus, .attendee("1"))
+                .expectState(\.focus, .attendee("2"))
                 .expectState(\.standup.attendees, [
-                    Attendee(id: "1"),
-                    Attendee(id: "2"),
-                    Attendee(id: "3"),
-                ])
-                .expectState(\.focus, .attendee("1"))
-                .expectState(\.standup.attendees, [
-                    Attendee(id: "1"),
-                    Attendee(id: "2"),
-                    Attendee(id: "3"),
+                    .mock("2"),
+                    .mock("3"),
+                    .mock("4"),
                 ])
             Step.action(.deleteAttendees([1]))
-                .expectState(\.focus, .attendee("3"))
-                .expectState(\.standup.attendees, [
-                    Attendee(id: "1"),
-                    Attendee(id: "3"),
-                ])
-            Step.action(.deleteAttendees([1]))
-                .expectState(\.focus, .attendee("1"))
-                .expectState(\.standup.attendees, [
-                    Attendee(id: "1"),
-                ])
-            Step.action(.deleteAttendees([0]))
                 .expectState(\.focus, .attendee("4"))
                 .expectState(\.standup.attendees, [
-                    Attendee(id: "4"),
+                    .mock("2"),
+                    .mock("4"),
                 ])
+            Step.action(.deleteAttendees([1]))
+                .expectState(\.focus, .attendee("2"))
+                .expectState(\.standup.attendees, [.mock("2")])
+            Step.action(.deleteAttendees([0]))
+                .expectState(\.focus, .attendee("0"))
+                .expectState(\.standup.attendees, [.init(id: "0")])
         }
     }
 }

@@ -384,18 +384,14 @@ struct RecordMeetingComponent: Component, PreviewProvider {
             Step.dependency(\.continuousClock, TestClock())
             Step.dependency(\.soundEffectClient.play, { soundEffectPlayCount.withValue { $0 += 1 } })
             Step.appear(await: false)
-                .expectState {
-                    $0.speakerIndex = 0
-                    $0.secondsElapsed = 0
-                }
+                .expectState(\.secondsElapsed, 0)
+                .expectState(\.speakerIndex, 0)
                 .validateState("sound played") { _ in
                     soundEffectPlayCount.value == 0
                 }
             Step.advanceClock()
-                .expectState {
-                    $0.speakerIndex = 1
-                    $0.secondsElapsed = 1
-                }
+                .expectState(\.secondsElapsed, 1)
+                .expectState(\.speakerIndex, 1)
                 .validateState("sound played") { _ in
                     soundEffectPlayCount.value == 1
                 }

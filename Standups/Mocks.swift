@@ -49,6 +49,12 @@ extension Standup {
     )
 }
 
+extension Attendee {
+    static func mock(_ id: String) -> Attendee {
+        Attendee(id: .init(stringLiteral: id), name: id)
+    }
+}
+
 extension Meeting {
 
     static let mock = Meeting(
