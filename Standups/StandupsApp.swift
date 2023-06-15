@@ -56,6 +56,8 @@ struct StandupsApp: App {
                 withDependencies {
                     $0.context = .preview
                 } operation: {
+//                    MainComponent.componentPreview
+//                    StandupsListComponent.componentPreview
                     ComponentListView(components: components)
                 }
             } else {
