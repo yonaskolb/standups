@@ -7,31 +7,9 @@ import Foundation
 @main
 struct StandupsApp: App {
 
-    let eventSubscription: AnyCancellable
-    @StateObject var model: ViewModel<MainModel> = .init(state: .init())
+    @StateObject var model: ViewModel<MainModel> = .init(state: .init()).logEvents()
 
-    init() {
-        eventSubscription = EventStore.shared.eventPublisher.sink { event in
-
-            let valueSuffix: String
-            switch event.type {
-                case .mutation, .binding:
-                    let value = event.type.value
-                    let valueString = dumpToString(value, maxDepth: 2)
-                    if valueString == "\"\"" {
-                        valueSuffix = ""
-                    } else if valueString.contains("\n") {
-                        valueSuffix = "\n\t" + valueString.replacingOccurrences(of: "\n", with: "\n\t")
-                    } else {
-                        valueSuffix = " = \(valueString)"
-                    }
-
-                default:
-                    valueSuffix = ""
-            }
-            print("\(event.type.emoji) \(event.description)\(valueSuffix)")
-        }
-    }
+    init() {}
 
     var body: some Scene {
         WindowGroup {
