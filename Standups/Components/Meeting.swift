@@ -39,7 +39,7 @@ struct MeetingComponent: Component, PreviewProvider {
     typealias Model = MeetingModel
 
     static func view(model: ViewModel<MeetingModel>) -> some View {
-        NavigationView {
+        NavigationStack {
             MeetingView(model: model)
         }
     }

@@ -232,7 +232,7 @@ struct StandupsListComponent: Component, PreviewProvider {
     typealias Model = StandupsListModel
 
     static func view(model: ViewModel<StandupsListModel>) -> some View {
-        NavigationView { StandupsList(model: model) }
+        NavigationStack { StandupsList(model: model) }
     }
 
     static var states: States {

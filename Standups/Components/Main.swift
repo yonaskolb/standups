@@ -16,7 +16,7 @@ struct MainView: ComponentView {
     @ObservedObject var model: ViewModel<MainModel>
 
     var view: some View {
-        NavigationView {
+        NavigationStack {
             StandupsList(model: model.scope(Model.standupList))
         }
     }

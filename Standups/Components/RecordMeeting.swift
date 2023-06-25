@@ -355,7 +355,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
     typealias Model = RecordMeetingModel
 
     static func view(model: ViewModel<RecordMeetingModel>) -> some View {
-        NavigationView { RecordMeetingView(model: model) }
+        NavigationStack { RecordMeetingView(model: model) }
     }
 
     static var states: States {

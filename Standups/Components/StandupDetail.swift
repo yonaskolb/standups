@@ -279,7 +279,7 @@ struct StandupDetailComponent: Component, PreviewProvider {
     typealias Model = StandupDetailModel
 
     static func view(model: ViewModel<StandupDetailModel>) -> some View {
-        NavigationView {
+        NavigationStack {
             StandupDetailView(model: model)
         }
     }
