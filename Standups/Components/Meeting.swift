@@ -44,9 +44,5 @@ struct MeetingComponent: Component, PreviewProvider {
         }
     }
 
-    static var states: States {
-        State("default") {
-            .init(meeting: .mock, standup: .mock)
-        }
-    }
+    static var preview = PreviewModel(state: .init(meeting: .mock, standup: .mock))
 }

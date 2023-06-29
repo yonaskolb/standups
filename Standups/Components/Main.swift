@@ -29,15 +29,10 @@ struct MainComponent: Component, PreviewProvider {
         MainView(model: model)
     }
 
-    static var states: States {
-        State("Main") {
-            .init()
-        }
-    }
+    static var preview = PreviewModel(state: .init())
 
     static var tests: Tests {
-
-        Test("app walkthrough", state: .init(), assertions: []) {
+        Test("app walkthrough", assertions: []) {
             Step.dependency(\.dataManager, .mockStandups([]))
             Step.appear()
             Step.scope(Model.standupList) {

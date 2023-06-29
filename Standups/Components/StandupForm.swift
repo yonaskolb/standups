@@ -122,22 +122,16 @@ struct StandupFormComponent: Component, PreviewProvider {
         StandupFormView(model: model)
     }
 
-    static var states: States {
-        State("filled") {
-            .init(focus: .attendee(Standup.mock.attendees[3].id), standup: .mock)
-        }
-        State("empty") {
-            .init(standup: .init(id: "1"))
-        }
-    }
+    static var preview = PreviewModel(state: .init(standup: .mock))
 
     static var tests: Tests {
-        Test("fill", state: .init(standup: .init(id: .init()))) {
+        Test("fill", state: .init(standup: .init(id: "1"))) {
+            Step.snapshot("empty")
             Step.dependency(\.uuid, .incrementing)
             Step.appear()
                 .expectState(\.standup.attendees, [.init(id: "0")])
             Step.binding(\.standup.title, "Engineering")
-            Step.binding(\.standup.duration, .seconds(20))
+            Step.binding(\.standup.duration, .seconds(20*60))
             Step.binding(\.standup.theme, .navy)
             Step.binding(\.focus, .attendee("0"))
             Step.binding(\.standup.attendees[id: "0"]!.name, "Tahmina")
@@ -145,6 +139,7 @@ struct StandupFormComponent: Component, PreviewProvider {
                 .expectState(\.standup.attendees, [.init(id: "0", name: "Tahmina"), .init(id: "1")])
                 .expectState(\.focus, .attendee("1"))
             Step.binding(\.standup.attendees[id: "1"]!.name, "Sarah")
+            Step.snapshot("filled")
         }
         Test("remove attendee", state: .init(standup: Standup(
             id: Standup.ID(),

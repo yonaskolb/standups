@@ -152,14 +152,10 @@ struct StandupsList: ComponentView {
                     .navigationTitle("New standup")
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("Dismiss") {
-                                model.send(.dismissAddStandup)
-                            }
+                            Button(.dismissAddStandup, "Dismiss")
                         }
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Add") {
-                                model.send(.confirmAddStandup(route.model.state.standup))
-                            }
+                            Button(.confirmAddStandup(route.model.state.standup), "Add")
                         }
                     }
             }
@@ -235,31 +231,7 @@ struct StandupsListComponent: Component, PreviewProvider {
         NavigationStack { StandupsList(model: model) }
     }
 
-    static var states: States {
-        State("list") {
-            .init(standups: [.mock, .designMock, .engineeringMock])
-        }
-
-        State("empty") {
-            .init(standups: [])
-        }
-
-        State(
-            "deeplink",
-            route: .detail(
-                .init(
-                    state: .init(standup: .mock),
-                    route: .record(
-                        .init(
-                            state: .init(standup: .mock)
-                        )
-                    )
-                )
-            )
-        ) {
-            .init(standups: [.mock])
-        }
-    }
+    static var preview = PreviewModel(state: .init(standups: [.mock, .designMock, .engineeringMock]))
 
     static var tests: Tests {
         Test("add", state: .init()) {
@@ -321,23 +293,25 @@ struct StandupsListComponent: Component, PreviewProvider {
         }
 
         Test("load", state: .init()) {
+            Step.snapshot("empty")
             Step.branch("load failure") {
-                Step.dependency(\.dataManager, .failToLoad)
                 Step.appear()
                     .expectState(\.alert, nil)
+                    .dependency(\.dataManager, .failToLoad)
             }
             Step.branch("decoding failure") {
-                Step.dependency(\.dataManager, .failToDecode)
                 Step.appear()
                     .expectState(\.alert, .dataFailedToLoad)
+                    .dependency(\.dataManager, .failToDecode)
                 Step.action(.alertButton(.confirmLoadMockData))
                     .expectState(\.standups, [.mock, .designMock, .engineeringMock])
                 Step.binding(\.alert, nil)
             }
             Step.branch("successful") {
-                Step.dependency(\.dataManager, .mockStandups([.mock, .designMock]))
                 Step.appear()
+                    .dependency(\.dataManager, .mockStandups([.mock, .designMock]))
                     .expectState(\.standups, [.mock, .designMock])
+                Step.snapshot("content")
             }
         }
     }

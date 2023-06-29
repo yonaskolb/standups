@@ -358,27 +358,17 @@ struct RecordMeetingComponent: Component, PreviewProvider {
         NavigationStack { RecordMeetingView(model: model) }
     }
 
-    static var states: States {
-        State("default") {
-            .init(standup: .mock)
-        }
-        State("quick") {
-            .init(standup: Standup(
-                id: Standup.ID(),
-                attendees: [
-                    Attendee(id: Attendee.ID()),
-                    Attendee(id: Attendee.ID()),
-                ],
-                duration: .seconds(2)
-            ))
-        }
-        State("failed speech") {
-            .init(standup: .mock, alert: .speechRecognizerFailed)
-        }
-    }
+    static var preview = PreviewModel(state: .init(standup: Standup(
+        id: Standup.ID(),
+        attendees: [
+            Attendee(id: Attendee.ID()),
+            Attendee(id: Attendee.ID()),
+        ],
+        duration: .seconds(2)
+    )))
 
     static var tests: Tests {
-        Test("timer", stateName: "quick") {
+        Test("timer") {
             let soundEffectPlayCount = LockIsolated(0)
             Step.dependency(\.speechClient.authorizationStatus, { .denied })
             Step.dependency(\.continuousClock, TestClock())
@@ -400,7 +390,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
                 .expectOutput(.meetingFinished(transcript: ""))
         }
 
-        Test("record transcript", stateName: "quick") {
+        Test("record transcript") {
             Step.dependency(\.speechClient, .string("hello"))
             Step.dependency(\.continuousClock, TestClock())
             Step.appear(await: false)
@@ -413,7 +403,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
                 .expectOutput(.meetingFinished(transcript: "hello"))
         }
 
-        Test("end meeting", stateName: "default") {
+        Test("end meeting") {
             Step.dependency(\.speechClient.authorizationStatus, { .denied })
             Step.dependency(\.continuousClock, TestClock())
             Step.appear(await: false)
@@ -436,7 +426,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
             }
         }
 
-        Test("next speaker", stateName: "quick") {
+        Test("next speaker") {
             let soundEffectPlayCount = LockIsolated(0)
             Step.dependency(\.speechClient, .string("hello"))
             Step.dependency(\.continuousClock, TestClock())
@@ -466,7 +456,7 @@ struct RecordMeetingComponent: Component, PreviewProvider {
                 .expectOutput(.meetingFinished(transcript: "hello"))
         }
 
-        Test("speech failure", stateName: "quick", assertions: []) {
+        Test("speech failure", assertions: []) {
             Step.dependency(\.speechClient, .string("I completed the project", fail: true))
             Step.dependency(\.continuousClock, TestClock())
             Step.appear(await: false)

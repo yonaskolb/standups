@@ -284,20 +284,7 @@ struct StandupDetailComponent: Component, PreviewProvider {
         }
     }
 
-    static var states: States {
-        State("default") {
-            .init(standup: .mock)
-        }
-        State("empty") {
-            .init(standup: .init(id: "0"))
-        }
-        State("speech denied") {
-            .init(standup: .mock, alert: .speechRecognitionDenied)
-        }
-        State("speech restricted") {
-            .init(standup: .mock, alert: .speechRecognitionRestricted)
-        }
-    }
+    static var preview = PreviewModel(state: .init(standup: .mock))
 
     static var tests: Tests {
         let standup = Standup(id: "0")
@@ -337,7 +324,7 @@ struct StandupDetailComponent: Component, PreviewProvider {
                 .expectEmptyRoute()
         }
 
-        Test("delete", stateName: "default") {
+        Test("delete") {
             Step.action(.delete)
                 .expectState(\.alert, .deleteStandup)
             Step.action(.alertButton(.confirmDeletion))
@@ -345,21 +332,22 @@ struct StandupDetailComponent: Component, PreviewProvider {
                 .expectOutput(.standupDeleted(Standup.mock.id))
         }
 
-        Test("delete meetings", stateName: "default") {
+        Test("delete meetings") {
             Step.action(.deleteMeetings(.init(integer: 0)))
                 .expectState(\.standup.meetings, [])
         }
 
-        Test("select meeting", stateName: "default") {
+        Test("select meeting") {
             Step.action(.selectMeeting(.mock))
                 .expectRoute(/Model.Route.meeting, state: .init(meeting: .mock, standup: .mock))
         }
 
-        Test("speech status", stateName: "default") {
+        Test("speech status") {
             Step.branch("restricted") {
                 Step.dependency(\.speechClient.authorizationStatus, { .restricted })
                 Step.action(.startMeeting)
                     .expectState(\.alert, .speechRecognitionRestricted)
+                Step.snapshot("speech restricted")
                 Step.branch("cancel") {
                     Step.binding(\.alert, .none)
                         .expectState(\.alert, .none)
@@ -374,6 +362,7 @@ struct StandupDetailComponent: Component, PreviewProvider {
                 Step.dependency(\.speechClient.authorizationStatus, { .denied })
                 Step.action(.startMeeting)
                     .expectState(\.alert, .speechRecognitionDenied)
+                Step.snapshot("speech denied")
                 Step.branch("continue") {
                     Step.action(.alertButton(.continueWithoutRecording))
                         .expectState(\.alert, .none)
