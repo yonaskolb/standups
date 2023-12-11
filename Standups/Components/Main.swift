@@ -3,10 +3,11 @@ import SwiftComponent
 import SwiftUI
 import Dependencies
 
-struct MainModel: ComponentModel {
-
+@ComponentModel
+struct MainModel {
+    
     static let standupList = Scope<StandupsListModel> { $0.scope(state: \.standupList) }
-
+    
     struct State {
         var standupList: StandupsListModel.State = .init()
     }
@@ -14,7 +15,7 @@ struct MainModel: ComponentModel {
 
 struct MainView: ComponentView {
     @ObservedObject var model: ViewModel<MainModel>
-
+    
     var view: some View {
         NavigationStack {
             StandupsList(model: model.scope(Model.standupList))
@@ -24,13 +25,13 @@ struct MainView: ComponentView {
 
 struct MainComponent: Component, PreviewProvider {
     typealias Model = MainModel
-
+    
     static func view(model: ViewModel<Model>) -> some View {
         MainView(model: model)
     }
-
+    
     static var preview = PreviewModel(state: .init())
-
+    
     static var tests: Tests {
         Test("app walkthrough", assertions: []) {
             Step.dependency(\.dataManager, .mockStandups([]))

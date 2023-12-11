@@ -3,56 +3,57 @@ import SwiftUI
 import SwiftUINavigation
 import SwiftComponent
 
-struct StandupFormModel: ComponentModel {
-
+@ComponentModel
+struct StandupFormModel {
+    
     struct State {
         var focus: Field? = .title
         var standup: Standup
     }
-
+    
     enum Field: Hashable {
         case attendee(Attendee.ID)
         case title
     }
-
+    
     enum Action {
         case deleteAttendees(IndexSet)
         case addAttendee
     }
-
-    func appear(model: Model) async {
-        if model.standup.attendees.isEmpty {
-            model.standup.attendees.append(Attendee(id: Attendee.ID(model.dependencies.uuid())))
+    
+    func appear() async {
+        if state.standup.attendees.isEmpty {
+            state.standup.attendees.append(Attendee(id: Attendee.ID(dependencies.uuid())))
         }
     }
-
-    func handle(action: Action, model: Model) async {
+    
+    func handle(action: Action) async {
         switch action {
-            case .addAttendee:
-                let attendee = Attendee(id: Attendee.ID(model.dependencies.uuid()))
-                model.standup.attendees.append(attendee)
-                model.focus = .attendee(attendee.id)
-            case .deleteAttendees(let indices):
-                var attendees = model.standup.attendees
-                attendees.remove(atOffsets: indices)
-                if attendees.isEmpty {
-                    attendees.append(Attendee(id: Attendee.ID(model.dependencies.uuid())))
-                }
-                model.standup.attendees = attendees
+        case .addAttendee:
+            let attendee = Attendee(id: Attendee.ID(dependencies.uuid()))
+            state.standup.attendees.append(attendee)
+            state.focus = .attendee(attendee.id)
+        case .deleteAttendees(let indices):
+            var attendees = state.standup.attendees
+            attendees.remove(atOffsets: indices)
+            if attendees.isEmpty {
+                attendees.append(Attendee(id: Attendee.ID(dependencies.uuid())))
+            }
+            state.standup.attendees = attendees
 
-                guard let firstIndex = indices.first
-                else { return }
-                let index = min(firstIndex, model.standup.attendees.count - 1)
-                model.focus = .attendee(model.standup.attendees[index].id)
+            guard let firstIndex = indices.first
+            else { return }
+            let index = min(firstIndex, state.standup.attendees.count - 1)
+            state.focus = .attendee(state.standup.attendees[index].id)
         }
     }
 }
 
 struct StandupFormView: ComponentView {
-
+    
     @FocusState var focus: StandupFormModel.Field?
     @ObservedObject var model: ViewModel<StandupFormModel>
-
+    
     var view: some View {
         Form {
             Section {
@@ -83,13 +84,13 @@ struct StandupFormView: ComponentView {
             }
         }
         // this causes a crash when run in preview
-//        .bind(model.binding(\.focus), to: self.$focus)
+        //        .bind(model.binding(\.focus), to: self.$focus)
     }
 }
 
 struct ThemePicker: View {
     @Binding var selection: Theme
-
+    
     var body: some View {
         Picker("Theme", selection: $selection) {
             ForEach(Theme.allCases) { theme in
@@ -115,15 +116,15 @@ extension Duration {
 }
 
 struct StandupFormComponent: Component, PreviewProvider {
-
+    
     typealias Model = StandupFormModel
-
+    
     static func view(model: ViewModel<StandupFormModel>) -> some View {
         StandupFormView(model: model)
     }
-
+    
     static var preview = PreviewModel(state: .init(standup: .mock))
-
+    
     static var tests: Tests {
         Test("fill", state: .init(standup: .init(id: "1"))) {
             Step.snapshot("empty")

@@ -4,23 +4,24 @@ import SwiftComponent
 import SwiftUI
 import SwiftUINavigation
 
-struct StandupsListModel: ComponentModel {
-
+@ComponentModel
+struct StandupsListModel {
+    
     struct State {
         var standups: IdentifiedArrayOf<Standup> = []
         var loaded = false
         var alert: AlertState<AlertAction>?
     }
-
+    
     enum Route {
         case add(ComponentRoute<StandupFormModel>)
         case detail(ComponentRoute<StandupDetailModel>)
     }
-
+    
     enum AlertAction {
         case confirmLoadMockData
     }
-
+    
     enum Action {
         case addStandup
         case dismissAddStandup
@@ -28,60 +29,60 @@ struct StandupsListModel: ComponentModel {
         case selectStandup(Standup)
         case alertButton(AlertAction?)
     }
-
+    
     enum Input {
         case detail(StandupDetailModel.Output)
     }
-
-    func connect(route: Route, model: Model) -> Connection {
+    
+    func connect(route: Route) -> Connection {
         switch route {
         case .detail(let route):
-            return model.connect(route, output: Input.detail)
+            return connect(route, output: Input.detail)
         case .add(let route):
-            return model.connect(route)
+            return connect(route)
         }
     }
-
-    func appear(model: Model) async {
-        guard !model.loaded else { return }
+    
+    func appear() async {
+        guard !state.loaded else { return }
 
         do {
-            model.standups = try JSONDecoder().decode(
+            state.standups = try JSONDecoder().decode(
                 IdentifiedArray.self,
-                from: model.dependencies.dataManager.load(.standups)
+                from: dependencies.dataManager.load(.standups)
             )
         } catch is DecodingError {
-            model.alert = .dataFailedToLoad
+            state.alert = .dataFailedToLoad
         } catch {
-
+            
         }
-        model.loaded = true
+        state.loaded = true
     }
-
-    func handle(action: Action, model: Model) async {
+    
+    func handle(action: Action) async {
         switch action {
         case .addStandup:
-            model.route(to: Route.add, state: .init(standup: Standup(id: .init(model.dependencies.uuid()))))
+            route(to: Route.add, state: .init(standup: Standup(id: .init(dependencies.uuid()))))
         case .dismissAddStandup:
-            model.dismissRoute()
+            dismissRoute()
         case .confirmAddStandup(let standup):
             var standup = standup
             standup.attendees.removeAll { attendee in
                 attendee.name.allSatisfy(\.isWhitespace)
             }
             if standup.attendees.isEmpty {
-                standup.attendees.append(Attendee(id: Attendee.ID(model.dependencies.uuid())))
+                standup.attendees.append(Attendee(id: Attendee.ID(dependencies.uuid())))
             }
-            model.standups.append(standup)
-            model.dismissRoute()
-            saveStandups(model)
+            state.standups.append(standup)
+            dismissRoute()
+            saveStandups()
         case .selectStandup(let standup):
-            model.route(to: Route.detail, state: .init(standup: standup))
+            route(to: Route.detail, state: .init(standup: standup))
         case .alertButton(let action):
             switch action {
             case .confirmLoadMockData:
                 withAnimation {
-                    model.standups = [
+                    state.standups = [
                         .mock,
                         .designMock,
                         .engineeringMock,
@@ -92,23 +93,23 @@ struct StandupsListModel: ComponentModel {
             }
         }
     }
-
-    func saveStandups(_ model: Model) {
-        try? model.dependencies.dataManager.save(JSONEncoder().encode(model.standups), .standups)
+    
+    func saveStandups() {
+        try? dependencies.dataManager.save(JSONEncoder().encode(state.standups), .standups)
     }
-
-    func handle(input: Input, model: Model) async {
+    
+    func handle(input: Input) async {
         switch input {
         case .detail(.standupDeleted(let standup)):
             withAnimation {
-                model.standups.remove(id: standup)
-                model.dismissRoute()
-                saveStandups(model)
+                state.standups.remove(id: standup)
+                dismissRoute()
+                saveStandups()
             }
         case .detail(.standupEdited(let standup)):
-            model.standups[id: standup.id] = standup
-            model.dismissRoute()
-            saveStandups(model)
+            state.standups[id: standup.id] = standup
+            dismissRoute()
+            saveStandups()
         }
     }
 }
@@ -134,7 +135,7 @@ extension AlertState where Action == StandupsListModel.AlertAction {
 
 struct StandupsList: ComponentView {
     @ObservedObject var model: ViewModel<StandupsListModel>
-
+    
     func presentation(route: StandupsListModel.Route) -> Presentation {
         switch route {
         case .add:
@@ -143,7 +144,7 @@ struct StandupsList: ComponentView {
             return .push
         }
     }
-
+    
     func view(route: StandupsListModel.Route) -> some View {
         switch route {
         case .add(let route):
@@ -152,10 +153,10 @@ struct StandupsList: ComponentView {
                     .navigationTitle("New standup")
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button(.dismissAddStandup, "Dismiss")
+                            button(.dismissAddStandup, "Dismiss")
                         }
                         ToolbarItem(placement: .confirmationAction) {
-                            Button(.confirmAddStandup(route.model.state.standup), "Add")
+                            button(.confirmAddStandup(route.model.state.standup), "Add")
                         }
                     }
             }
@@ -163,7 +164,7 @@ struct StandupsList: ComponentView {
             StandupDetailView(model: route.model)
         }
     }
-
+    
     var view: some View {
         List {
             ForEach(model.standups) { standup in
@@ -187,7 +188,7 @@ struct StandupsList: ComponentView {
 
 struct CardView: View {
     let standup: Standup
-
+    
     var body: some View {
         VStack(alignment: .leading) {
             Text(self.standup.title)
@@ -224,15 +225,15 @@ extension URL {
 }
 
 struct StandupsListComponent: Component, PreviewProvider {
-
+    
     typealias Model = StandupsListModel
-
+    
     static func view(model: ViewModel<StandupsListModel>) -> some View {
         NavigationStack { StandupsList(model: model) }
     }
-
+    
     static var preview = PreviewModel(state: .init(standups: [.mock, .designMock, .engineeringMock]))
-
+    
     static var tests: Tests {
         Test("add", state: .init()) {
             let mainQueue = DispatchQueue.test
@@ -270,7 +271,7 @@ struct StandupsListComponent: Component, PreviewProvider {
                     }
             }
         }
-
+        
         Test("select", state: .init(standups: [.mock, .designMock])) {
             Step.action(.selectStandup(.designMock))
                 .expectRoute(/Model.Route.detail, state: .init(standup: .designMock))
@@ -291,7 +292,7 @@ struct StandupsListComponent: Component, PreviewProvider {
                     .expectEmptyRoute()
             }
         }
-
+        
         Test("load", state: .init()) {
             Step.snapshot("empty")
             Step.branch("load failure") {

@@ -744,7 +744,7 @@
 			repositoryURL = "https://github.com/pointfreeco/swiftui-navigation.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.5.0;
+				minimumVersion = 1.2.0;
 			};
 		};
 		CA350CBD2984510200434F8A /* XCRemoteSwiftPackageReference "swift-identified-collections" */ = {

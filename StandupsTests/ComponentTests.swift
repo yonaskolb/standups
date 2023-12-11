@@ -14,9 +14,9 @@ final class ComponentTests: QuickSpec {
     func testComponent<ComponentType: Component>( _ component: ComponentType.Type) {
         describe(component.Model.baseName) {
             for test in component.tests {
-                it(test.name, file: test.source.file, line: test.source.line) {
+                it(test.testName, file: test.source.file, line: test.source.line) {
                     let result = await ComponentType.run(test)
-                    print("\t\(component.Model.baseName): \(test.name)")
+                    print("\t\(component.Model.baseName): \(test.testName)")
                     for step in result.steps {
                         self.testStep(step)
                     }

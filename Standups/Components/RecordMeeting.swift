@@ -5,8 +5,9 @@ import SwiftUI
 import SwiftUINavigation
 import XCTestDynamicOverlay
 
-struct RecordMeetingModel: ComponentModel {
-    
+@ComponentModel
+struct RecordMeetingModel {
+
     struct State {
         var standup: Standup
         var alert: AlertState<AlertAction>?
@@ -39,84 +40,84 @@ struct RecordMeetingModel: ComponentModel {
         case alertButton(AlertAction?)
     }
 
-    func appear(model: Model) async {
+    func appear() async {
 
-        model.dependencies.soundEffectClient.load("ding.wav")
+        dependencies.soundEffectClient.load("ding.wav")
 
         let authorization =
-        await model.dependencies.speechClient.authorizationStatus() == .notDetermined
-        ? model.dependencies.speechClient.requestAuthorization()
-        : model.dependencies.speechClient.authorizationStatus()
+        await dependencies.speechClient.authorizationStatus() == .notDetermined
+        ? dependencies.speechClient.requestAuthorization()
+        : dependencies.speechClient.authorizationStatus()
 
         await withTaskGroup(of: Void.self) { group in
             if authorization == .authorized {
                 group.addTask {
-                    await self.startSpeechRecognition(model: model)
+                    await self.startSpeechRecognition()
                 }
             }
             group.addTask {
-                await self.startTimer(model: model)
+                await self.startTimer()
             }
         }
     }
 
-    func handle(action: Action, model: Model) async {
+    func handle(action: Action) async {
         switch action {
-            case .nextSpeaker:
-                guard model.speakerIndex < model.standup.attendees.count - 1
-                else {
-                    model.alert = .endMeeting(isDiscardable: false)
-                    return
-                }
+        case .nextSpeaker:
+            guard state.speakerIndex < state.standup.attendees.count - 1
+            else {
+                state.alert = .endMeeting(isDiscardable: false)
+                return
+            }
 
-                model.dependencies.soundEffectClient.play()
-                model.speakerIndex += 1
-                model.secondsElapsed = model.speakerIndex * Int(model.standup.durationPerAttendee.components.seconds)
-            case .endMeeting:
-                model.alert = .endMeeting(isDiscardable: true)
-            case .alertButton(let action):
-                switch action {
-                    case .confirmSave?:
-                        finishMeeting(model: model)
-                    case .confirmDiscard?:
-                        model.output(.dismiss)
-                    case .none: break
-                }
-                model.alert = nil
+            dependencies.soundEffectClient.play()
+            state.speakerIndex += 1
+            state.secondsElapsed = state.speakerIndex * Int(state.standup.durationPerAttendee.components.seconds)
+        case .endMeeting:
+            state.alert = .endMeeting(isDiscardable: true)
+        case .alertButton(let action):
+            switch action {
+            case .confirmSave?:
+                finishMeeting()
+            case .confirmDiscard?:
+                output(.dismiss)
+            case .none: break
+            }
+            state.alert = nil
         }
     }
 
-    private func finishMeeting(model: Model) {
-        model.output(.meetingFinished(transcript: model.transcript))
+    private func finishMeeting() {
+        output(.meetingFinished(transcript: state.transcript))
     }
 
-    private func startSpeechRecognition(model: Model) async {
+    private func startSpeechRecognition() async {
         do {
-            let speechTask = await model.dependencies.speechClient.startTask(SFSpeechAudioBufferRecognitionRequest())
+            let speechTask = await dependencies.speechClient.startTask(SFSpeechAudioBufferRecognitionRequest())
             for try await result in speechTask {
-                model.transcript = result.bestTranscription.formattedString
+                state.transcript = result.bestTranscription.formattedString
             }
         } catch {
-            if !model.transcript.isEmpty {
-                model.transcript += " ❌"
+            if !state.transcript.isEmpty {
+                state.transcript += " ❌"
             }
-            model.alert = .speechRecognizerFailed
+            state.alert = .speechRecognizerFailed
         }
     }
 
-    private func startTimer(model: Model) async {
-        for await _ in model.dependencies.continuousClock.timer(interval: .seconds(1)) where !model.state.isAlertOpen {
+    private func startTimer() async {
+        for await _ in dependencies.continuousClock.timer(interval: .seconds(1)) where !state.isAlertOpen {
 
-            model.secondsElapsed += 1
+            state.secondsElapsed += 1
 
-            let secondsPerAttendee = Int(model.standup.durationPerAttendee.components.seconds)
-            if model.secondsElapsed.isMultiple(of: secondsPerAttendee) {
-                if model.speakerIndex == model.standup.attendees.count - 1 {
-                    finishMeeting(model: model)
+            let secondsPerAttendee = Int(state.standup.durationPerAttendee.components.seconds)
+            if state.secondsElapsed.isMultiple(of: secondsPerAttendee) {
+                if state.speakerIndex == state.standup.attendees.count - 1 {
+                    finishMeeting()
                     break
                 }
-                model.speakerIndex += 1
-                model.dependencies.soundEffectClient.play()
+                state.speakerIndex += 1
+                dependencies.soundEffectClient.play()
             }
         }
     }

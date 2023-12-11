@@ -2,8 +2,9 @@ import Foundation
 import SwiftUI
 import SwiftComponent
 
-struct MeetingModel: ComponentModel {
-
+@ComponentModel
+struct MeetingModel {
+    
     struct State {
         let meeting: Meeting
         let standup: Standup
@@ -12,7 +13,7 @@ struct MeetingModel: ComponentModel {
 
 struct MeetingView: ComponentView {
     @ObservedObject var model: ViewModel<MeetingModel>
-
+    
     var view: some View {
         ScrollView {
             VStack(alignment: .leading) {
@@ -35,14 +36,14 @@ struct MeetingView: ComponentView {
 }
 
 struct MeetingComponent: Component, PreviewProvider {
-
+    
     typealias Model = MeetingModel
-
+    
     static func view(model: ViewModel<MeetingModel>) -> some View {
         NavigationStack {
             MeetingView(model: model)
         }
     }
-
+    
     static var preview = PreviewModel(state: .init(meeting: .mock, standup: .mock))
 }
