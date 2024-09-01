@@ -28,12 +28,12 @@
 		CA350CD2298452F300434F8A /* ding.wav in Resources */ = {isa = PBXBuildFile; fileRef = CA350CD1298452F300434F8A /* ding.wav */; };
 		CC37D095299B508A0055C239 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC37D094299B508A0055C239 /* Main.swift */; };
 		CC498D222986B90000396AE0 /* Runtime in Frameworks */ = {isa = PBXBuildFile; productRef = CC498D212986B90000396AE0 /* Runtime */; };
+		CC4BEDF12C8410F60067F240 /* TestSteps.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC4BEDF02C8410F60067F240 /* TestSteps.swift */; };
 		CC5D01D2298533ED007889A8 /* ComponentList.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5D01D1298533ED007889A8 /* ComponentList.swift */; };
 		CC5D01D429853402007889A8 /* ComponentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5D01D329853402007889A8 /* ComponentTests.swift */; };
 		CC5D01D829853468007889A8 /* SwiftComponent in Frameworks */ = {isa = PBXBuildFile; productRef = CC5D01D729853468007889A8 /* SwiftComponent */; };
 		CC5D01E029853F03007889A8 /* Quick in Frameworks */ = {isa = PBXBuildFile; productRef = CC5D01DF29853F03007889A8 /* Quick */; };
 		CC5D01E22985644C007889A8 /* Runtime in Frameworks */ = {isa = PBXBuildFile; productRef = CC5D01E12985644C007889A8 /* Runtime */; };
-		CC5D01E42986491C007889A8 /* TestSteps.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5D01E32986491C007889A8 /* TestSteps.swift */; };
 		CC73AF6E2991EFDC00815483 /* Meeting.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC73AF6D2991EFDC00815483 /* Meeting.swift */; };
 		CC73AF702991F23A00815483 /* Mocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC73AF6F2991F23A00815483 /* Mocks.swift */; };
 /* End PBXBuildFile section */
@@ -76,10 +76,10 @@
 		CA350CD1298452F300434F8A /* ding.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = ding.wav; sourceTree = "<group>"; };
 		CC37D094299B508A0055C239 /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Main.swift; sourceTree = "<group>"; };
 		CC498D20298691CF00396AE0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		CC4BEDF02C8410F60067F240 /* TestSteps.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestSteps.swift; sourceTree = "<group>"; };
 		CC5D01D1298533ED007889A8 /* ComponentList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComponentList.swift; sourceTree = "<group>"; };
 		CC5D01D329853402007889A8 /* ComponentTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComponentTests.swift; sourceTree = "<group>"; };
 		CC5D01D52985344C007889A8 /* SwiftComponent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = SwiftComponent; path = ../SwiftComponent; sourceTree = "<group>"; };
-		CC5D01E32986491C007889A8 /* TestSteps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TestSteps.swift; path = ../../../Documents/TestSteps.swift; sourceTree = "<group>"; };
 		CC73AF6D2991EFDC00815483 /* Meeting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meeting.swift; sourceTree = "<group>"; };
 		CC73AF6F2991F23A00815483 /* Mocks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mocks.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -149,9 +149,9 @@
 				CC5D01D1298533ED007889A8 /* ComponentList.swift */,
 				CC73AF6F2991F23A00815483 /* Mocks.swift */,
 				CA350CAB298450BF00434F8A /* Helpers.swift */,
+				CC4BEDF02C8410F60067F240 /* TestSteps.swift */,
 				CA350CAA298450BF00434F8A /* Models.swift */,
 				CA350C742984506E00434F8A /* StandupsApp.swift */,
-				CC5D01E32986491C007889A8 /* TestSteps.swift */,
 				CC498D20298691CF00396AE0 /* Info.plist */,
 				CA350CAC298450BF00434F8A /* Assets.xcassets */,
 			);
@@ -379,11 +379,11 @@
 				CA350CB4298450BF00434F8A /* OpenSettings.swift in Sources */,
 				CA350C752984506E00434F8A /* StandupsApp.swift in Sources */,
 				CA350CB3298450BF00434F8A /* SpeechClient.swift in Sources */,
-				CC5D01E42986491C007889A8 /* TestSteps.swift in Sources */,
 				CA350CB5298450BF00434F8A /* SoundEffectClient.swift in Sources */,
 				CC73AF6E2991EFDC00815483 /* Meeting.swift in Sources */,
 				CA350CB2298450BF00434F8A /* DataManager.swift in Sources */,
 				CA350CB6298450BF00434F8A /* StandupsList.swift in Sources */,
+				CC4BEDF12C8410F60067F240 /* TestSteps.swift in Sources */,
 				CC37D095299B508A0055C239 /* Main.swift in Sources */,
 				CA350CB8298450BF00434F8A /* Helpers.swift in Sources */,
 				CA350CB1298450BF00434F8A /* StandupForm.swift in Sources */,
